@@ -11,6 +11,9 @@ import { TheFlippening } from './components/TheFlippening';
 import { WhaleAlarm } from './components/WhaleAlarm';
 import { WhaleSlots } from './components/WhaleSlots';
 import { WhaleRPG } from './components/WhaleRPG';
+import { WorldBoss } from './components/WorldBoss';
+import { CaptainsQuarters } from './components/CaptainsQuarters';
+import { TheAbyss } from './components/TheAbyss';
 import { getMarketWeather, WeatherState } from './services/heliusService';
 
 const App: React.FC = () => {
@@ -18,6 +21,7 @@ const App: React.FC = () => {
   const [depth, setDepth] = useState(0);
   const [isAlarmActive, setIsAlarmActive] = useState(false);
   const [weather, setWeather] = useState<WeatherState>('STORM');
+  const [isDrunk, setIsDrunk] = useState(false); // Global Drunk State
 
   // Dynamic Backgrounds - slightly lighter base to fix "too dark" issue
   const waterColor = useTransform(scrollYProgress, 
@@ -47,16 +51,19 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <div className={`relative min-h-screen overflow-hidden transition-colors duration-1000 ${isAlarmActive ? 'alarm-active' : ''}`} style={{ backgroundColor: '#020617' }}>
+    <div className={`relative min-h-screen overflow-hidden transition-all duration-1000 ${isAlarmActive ? 'alarm-active' : ''} ${isDrunk ? 'blur-[2px] contrast-125 saturate-150' : ''}`} style={{ backgroundColor: '#020617' }}>
       
+      {/* GLOBAL WORLD BOSS EVENT */}
+      <WorldBoss />
+
       {/* GLOBAL BOAT SWAY CONTAINER */}
       <motion.div 
         animate={{ 
-            rotate: [0.5, -0.5, 0.5],
+            rotate: isDrunk ? [1, -1, 1] : [0.5, -0.5, 0.5], // Extra sway when drunk
             y: [0, 5, 0]
         }}
         transition={{ 
-            duration: 8, 
+            duration: isDrunk ? 4 : 8, 
             repeat: Infinity, 
             ease: "easeInOut" 
         }}
@@ -73,7 +80,7 @@ const App: React.FC = () => {
                 className="rain fixed inset-0 pointer-events-none"
             />
             
-            {/* Cinematic Vignette - Fixed Z-Index to be behind content, and reduced opacity */}
+            {/* Cinematic Vignette */}
             <div className="fixed inset-0 pointer-events-none z-0 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(0,0,0,0.2)_80%,rgba(0,0,0,0.6)_100%)]" />
             
             {/* Film Grain */}
@@ -129,7 +136,6 @@ const App: React.FC = () => {
                     <WhaleHuntGame />
                 </section>
 
-                {/* NEW: THE FINAL SHOWDOWN (RPG) */}
                 <section className="relative z-20">
                      <div className="text-center py-10 bg-slate-950">
                         <h2 className="font-meme text-4xl text-red-600">THE FINAL SHOWDOWN</h2>
@@ -138,7 +144,6 @@ const App: React.FC = () => {
                      <WhaleRPG />
                 </section>
 
-                {/* NEW: WHALE SLOTS */}
                 <WhaleSlots />
 
                 <section className="relative z-20 py-32 bg-black">
@@ -151,16 +156,17 @@ const App: React.FC = () => {
 
                 <TheFlippening />
 
-                <section className="relative z-20 pb-32 pt-20">
+                <section className="relative z-20 py-32">
                     <WhaleOracle />
                 </section>
+
+                {/* MOVED: CAPTAIN'S QUARTERS */}
+                <CaptainsQuarters onDrunkMode={setIsDrunk} />
             </main>
 
-            {/* FOOTER */}
-            <footer className="relative z-20 bg-black text-center py-12 border-t border-slate-900 font-tech text-slate-600 text-xs">
-                <p>TRANSMISSION ENDED. SIGNAL LOST.</p>
-                <p className="mt-2">COPYRIGHT 1851 PEQUOD HOLDINGS LLC.</p>
-            </footer>
+            {/* THE ABYSS (REPLACES FOOTER) */}
+            <TheAbyss />
+
         </motion.div>
       </motion.div>
     </div>

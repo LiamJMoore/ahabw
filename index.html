@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>$AHAB | The Meme Hunter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Cinzel:wght@400;700;900&family=Share+Tech+Mono&family=Special+Elite&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Special Elite', cursive; /* Gritty Typewriter feel */
+        background-color: #020617;
+        color: #fff;
+        overflow-x: hidden;
+        cursor: crosshair;
+      }
+      h1, h2, h3, h4, .font-display {
+        font-family: 'Cinzel', serif;
+      }
+      .font-meme {
+        font-family: 'Bangers', cursive;
+      }
+      .font-tech {
+        font-family: 'Share Tech Mono', monospace;
+      }
+
+      /* CRT Scanline Effect */
+      .crt::before {
+        content: " ";
+        display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+        z-index: 2;
+        background-size: 100% 2px, 3px 100%;
+        pointer-events: none;
+      }
+
+      /* Rain Animation */
+      .rain {
+        position: fixed;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 5;
+        background-image: url('https://raw.githubusercontent.com/redstapler/rain-effect/master/rain.png');
+        animation: rain .3s linear infinite;
+        opacity: 0.3;
+        pointer-events: none;
+      }
+      @keyframes rain {
+        0% { background-position: 0% 0%; }
+        100% { background-position: 20% 100%; }
+      }
+
+      /* Ocean Wave Animations */
+      @keyframes wave {
+        0% { background-position-x: 0; }
+        100% { background-position-x: 1000px; }
+      }
+      
+      @keyframes swell {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(15px); }
+      }
+
+      /* Alarm Pulse */
+      @keyframes alarm-flash {
+        0%, 100% { box-shadow: inset 0 0 0 transparent; }
+        50% { box-shadow: inset 0 0 100px rgba(220, 38, 38, 0.5); }
+      }
+      
+      .alarm-active {
+        animation: alarm-flash 1s infinite;
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #020617;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #ef4444; 
+      }
+      
+      .text-glow {
+        text-shadow: 0 0 10px rgba(34, 211, 238, 0.7);
+      }
+      
+      .blood-text {
+        text-shadow: 2px 2px 0px #3f0a0a;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
+    "recharts": "https://esm.sh/recharts@^3.6.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "framer-motion": "https://esm.sh/framer-motion@^12.23.26",
+    "canvas-confetti": "https://esm.sh/canvas-confetti@^1.9.2"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

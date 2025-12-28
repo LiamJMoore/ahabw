@@ -13,7 +13,6 @@ import { WhaleSlots } from './components/WhaleSlots';
 import { WhaleRPG } from './components/WhaleRPG';
 import { WorldBoss } from './components/WorldBoss';
 import { CaptainsQuarters } from './components/CaptainsQuarters';
-import { TheAbyss } from './components/TheAbyss';
 import { getMarketWeather, WeatherState } from './services/heliusService';
 
 const App: React.FC = () => {
@@ -119,7 +118,7 @@ const App: React.FC = () => {
             </div>
 
             {/* --- MAIN SCROLL CONTENT --- */}
-            <main className="relative z-10">
+            <main className="relative z-10 pb-20">
                 <section className="relative min-h-screen flex flex-col justify-center items-center">
                     <Hero weather={weather} />
                 </section>
@@ -163,9 +162,6 @@ const App: React.FC = () => {
                 {/* MOVED: CAPTAIN'S QUARTERS */}
                 <CaptainsQuarters onDrunkMode={setIsDrunk} />
             </main>
-
-            {/* THE ABYSS (REPLACES FOOTER) */}
-            <TheAbyss />
 
         </motion.div>
       </motion.div>

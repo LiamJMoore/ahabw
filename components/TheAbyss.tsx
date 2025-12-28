@@ -32,7 +32,7 @@ export const TheAbyss: React.FC = () => {
     };
 
     return (
-        <section ref={containerRef} className="relative h-[8000px] w-full bg-black overflow-hidden">
+        <section ref={containerRef} className="relative h-[3000px] w-full bg-black overflow-hidden">
             
             {/* 1. DEPTH MARKERS (Sticky HUD) */}
             <div className="sticky top-0 h-screen w-full pointer-events-none z-20 flex flex-col items-center justify-center">
@@ -87,4 +87,3 @@ export const TheAbyss: React.FC = () => {
             
         </section>
     );
-};

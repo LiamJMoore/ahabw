@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Hero } from './components/Hero';
-import { CommLinks } from './components/CommLinks';
 import { WhaleHuntGame } from './components/WhaleHuntGame';
 import { Lore } from './components/Lore';
 import { Tokenomics } from './components/Tokenomics';
@@ -13,6 +12,7 @@ import { WhaleSlots } from './components/WhaleSlots';
 import { WhaleRPG } from './components/WhaleRPG';
 import { WorldBoss } from './components/WorldBoss';
 import { CaptainsQuarters } from './components/CaptainsQuarters';
+import { WorldMap } from './components/WorldMap';
 import { getMarketWeather, WeatherState } from './services/heliusService';
 
 const App: React.FC = () => {
@@ -123,12 +123,11 @@ const App: React.FC = () => {
                     <Hero weather={weather} />
                 </section>
                 
-                {/* NEW: COMMS LINKS (CA, TWITTER, DEXSCREENER) */}
-                <CommLinks />
-
                 <section className="relative z-20 py-32">
                     <Lore />
                 </section>
+
+                <WorldMap />
 
                 <section className="relative z-20 py-20 bg-slate-950/80 backdrop-blur-sm border-y border-slate-900">
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-5" />

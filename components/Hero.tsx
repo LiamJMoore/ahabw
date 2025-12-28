@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { WeatherState } from '../services/heliusService';
+import { AHAB_CA } from '../constants';
+import { Copy, Check, Twitter, BarChart3, ExternalLink } from 'lucide-react';
 
 interface HeroProps {
     weather: WeatherState;
@@ -11,6 +13,14 @@ export const Hero: React.FC<HeroProps> = ({ weather }) => {
   const yAhab = useTransform(scrollY, [0, 1000], [0, 400]);
   const textScale = useTransform(scrollY, [0, 300], [1, 1.2]);
   const textOpacity = useTransform(scrollY, [0, 300], [1, 0]);
+  
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(AHAB_CA);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   // Neutral Configurations - Dark/Slate aesthetic regardless of weather
   const weatherConfig = {
@@ -72,7 +82,7 @@ export const Hero: React.FC<HeroProps> = ({ weather }) => {
       {/* 3. MAIN TITLE CONTENT */}
       <motion.div 
         style={{ y: yAhab, scale: textScale, opacity: textOpacity }}
-        className="relative z-20 text-center px-4 flex flex-col items-center w-full"
+        className="relative z-20 text-center px-4 flex flex-col items-center w-full max-w-4xl"
       >
         <div className="inline-block border border-slate-700 bg-black/40 backdrop-blur-md px-4 py-1 mb-6 rounded font-tech text-xs tracking-[0.5em] text-slate-400">
             STORM LEVEL: {weatherConfig.stormLevel}
@@ -86,22 +96,59 @@ export const Hero: React.FC<HeroProps> = ({ weather }) => {
             {weatherConfig.message}
         </h2>
 
-        <p className="max-w-xl mx-auto mt-6 font-mono text-slate-300 text-sm md:text-base bg-black/40 p-4 border-l-2 border-slate-500 backdrop-blur-sm">
+        <p className="max-w-xl mx-auto mt-6 font-mono text-slate-300 text-sm md:text-base bg-black/40 p-4 border-l-2 border-slate-500 backdrop-blur-sm mb-12">
             "There is no utility. There is no roadmap. Only the hunt. 
             We are the Pequod. The chart is broken. The compass spins."
         </p>
 
-        <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => document.getElementById('radar')?.scrollIntoView({ behavior: 'smooth' })}
-            className="mt-12 group relative overflow-hidden text-white font-black font-meme text-3xl px-16 py-6 border-4 border-double border-cyan-900 shadow-[0_0_50px_rgba(0,0,0,0.4)] clip-path-polygon bg-cyan-950/50 hover:bg-cyan-900/50"
-        >
-            <span className="relative z-10 flex items-center gap-2 text-cyan-100">
-               DEPLOY SONAR
-            </span>
-            <div className="absolute inset-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-0 bg-cyan-900" />
-        </motion.button>
+        {/* REPLACED BUTTON WITH COMMS LINKS */}
+        <div className="w-full flex flex-col md:flex-row items-center gap-4 justify-center">
+            
+            {/* CONTRACT ADDRESS BAR */}
+            <button 
+                onClick={handleCopy}
+                className="w-full md:w-auto md:min-w-[400px] bg-black/60 hover:bg-black/80 backdrop-blur-md border border-slate-600 hover:border-cyan-500 rounded-xl p-2 flex items-center justify-between group transition-all duration-300 shadow-[0_0_20px_rgba(0,0,0,0.3)]"
+            >
+                <div className="bg-slate-800 px-3 py-2 rounded text-slate-400 font-mono text-xs border border-slate-700 group-hover:bg-cyan-900/20 group-hover:text-cyan-400 transition-colors">
+                    CA
+                </div>
+                
+                <code className="font-mono text-slate-300 text-xs md:text-sm truncate px-3 flex-1 text-center tracking-wider group-hover:text-cyan-200 transition-colors">
+                    {AHAB_CA}
+                </code>
+                
+                <div className="flex items-center gap-2 bg-slate-900/50 px-3 py-2 rounded border border-slate-800">
+                    <span className="text-[10px] font-tech text-slate-500 group-hover:text-cyan-400 uppercase tracking-wider hidden sm:block">
+                        {copied ? 'COPIED' : 'COPY'}
+                    </span>
+                    {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} className="text-slate-400 group-hover:text-cyan-400" />}
+                </div>
+            </button>
+
+            {/* ACTION BUTTONS */}
+            <div className="flex gap-4 w-full md:w-auto">
+                <a 
+                    href="#" 
+                    onClick={(e) => e.preventDefault()}
+                    className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#1a1d21]/80 hover:bg-[#202429] backdrop-blur-md text-white px-6 py-4 rounded-xl border border-slate-700 hover:border-white font-tech transition-all hover:-translate-y-1 shadow-lg min-w-[120px]"
+                >
+                    <BarChart3 size={18} className="text-cyan-500" />
+                    <span>CHART</span>
+                </a>
+
+                <a 
+                    href="https://x.com/CaptAhabCrypto" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-black/60 hover:bg-black backdrop-blur-md text-white px-6 py-4 rounded-xl border border-slate-700 hover:border-white font-tech transition-all hover:-translate-y-1 shadow-lg min-w-[120px]"
+                >
+                    <Twitter size={18} className="text-[#1DA1F2]" />
+                    <span>X</span>
+                </a>
+            </div>
+
+        </div>
+
       </motion.div>
 
     </div>

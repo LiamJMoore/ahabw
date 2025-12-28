@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { Hero } from './components/Hero';
+import { CommLinks } from './components/CommLinks';
 import { WhaleHuntGame } from './components/WhaleHuntGame';
 import { Lore } from './components/Lore';
 import { Tokenomics } from './components/Tokenomics';
@@ -8,13 +9,17 @@ import { WhaleRadar } from './components/WhaleRadar';
 import { WhaleOracle } from './components/WhaleOracle';
 import { TheFlippening } from './components/TheFlippening';
 import { WhaleAlarm } from './components/WhaleAlarm';
+import { WhaleSlots } from './components/WhaleSlots';
+import { WhaleRPG } from './components/WhaleRPG';
+import { getMarketWeather, WeatherState } from './services/heliusService';
 
 const App: React.FC = () => {
   const { scrollYProgress } = useScroll();
   const [depth, setDepth] = useState(0);
   const [isAlarmActive, setIsAlarmActive] = useState(false);
+  const [weather, setWeather] = useState<WeatherState>('STORM');
 
-  // Dynamic Backgrounds - slightly lighter base to fix darkness
+  // Dynamic Backgrounds - slightly lighter base to fix "too dark" issue
   const waterColor = useTransform(scrollYProgress, 
     [0, 0.3, 0.8, 1], 
     ['#1e293b', '#0f172a', '#020617', '#000000'] 
@@ -26,7 +31,19 @@ const App: React.FC = () => {
       setDepth(d);
     };
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+
+    // Weather Logic
+    const updateWeather = async () => {
+        const w = await getMarketWeather();
+        setWeather(w);
+    };
+    updateWeather();
+    const weatherInterval = setInterval(updateWeather, 60000); 
+
+    return () => {
+        window.removeEventListener('scroll', handleScroll);
+        clearInterval(weatherInterval);
+    };
   }, []);
 
   return (
@@ -56,8 +73,8 @@ const App: React.FC = () => {
                 className="rain fixed inset-0 pointer-events-none"
             />
             
-            {/* Cinematic Vignette (Fixed: Moved to z-5 to be BEHIND content, and made lighter) */}
-            <div className="fixed inset-0 pointer-events-none z-5 bg-[radial-gradient(circle_at_center,transparent_40%,rgba(0,0,0,0.1)_70%,rgba(0,0,0,0.5)_100%)]" />
+            {/* Cinematic Vignette - Fixed Z-Index to be behind content, and reduced opacity */}
+            <div className="fixed inset-0 pointer-events-none z-0 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(0,0,0,0.2)_80%,rgba(0,0,0,0.6)_100%)]" />
             
             {/* Film Grain */}
             <div className="fixed inset-0 pointer-events-none z-30 opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" />
@@ -94,11 +111,14 @@ const App: React.FC = () => {
                 />
             </div>
 
-            {/* --- MAIN SCROLL CONTENT (Z-10 sits ABOVE vignette) --- */}
+            {/* --- MAIN SCROLL CONTENT --- */}
             <main className="relative z-10">
                 <section className="relative min-h-screen flex flex-col justify-center items-center">
-                    <Hero />
+                    <Hero weather={weather} />
                 </section>
+                
+                {/* NEW: COMMS LINKS (CA, TWITTER, DEXSCREENER) */}
+                <CommLinks />
 
                 <section className="relative z-20 py-32">
                     <Lore />
@@ -108,6 +128,18 @@ const App: React.FC = () => {
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-5" />
                     <WhaleHuntGame />
                 </section>
+
+                {/* NEW: THE FINAL SHOWDOWN (RPG) */}
+                <section className="relative z-20">
+                     <div className="text-center py-10 bg-slate-950">
+                        <h2 className="font-meme text-4xl text-red-600">THE FINAL SHOWDOWN</h2>
+                        <p className="font-tech text-slate-500">TURN-BASED COMBAT SIMULATION</p>
+                     </div>
+                     <WhaleRPG />
+                </section>
+
+                {/* NEW: WHALE SLOTS */}
+                <WhaleSlots />
 
                 <section className="relative z-20 py-32 bg-black">
                     <WhaleRadar />

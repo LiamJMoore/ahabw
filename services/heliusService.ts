@@ -24,25 +24,24 @@ export interface HeliusAssetResponse {
   };
 }
 
-// Fallback data to ensure the UI never breaks, even if Helius is rate-limited or the key is invalid
+export interface BountyTx {
+    signature: string;
+    amount: number;
+    buyer: string;
+    timestamp: number;
+}
+
+// Fallback data to ensure the UI never breaks
 const FALLBACK_WHALE_DATA: HeliusAssetResponse = {
   result: {
     content: {
-      metadata: {
-        name: "White Whale",
-        symbol: "WHALE",
-      },
-      links: {
-        image: "", 
-      },
+      metadata: { name: "White Whale", symbol: "WHALE" },
+      links: { image: "" },
     },
     token_info: {
-      supply: 1000000000000000, // 1B example
+      supply: 1000000000000000,
       decimals: 6,
-      price_info: {
-        price_per_token: 0.001,
-        total_price: 1000000, // $1M Market Cap fallback
-      }
+      price_info: { price_per_token: 0.001, total_price: 1000000 }
     }
   }
 };
@@ -56,23 +55,16 @@ export const fetchTokenAsset = async (mintAddress: string): Promise<HeliusAssetR
   try {
     const response = await fetch(RPC_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 'ahab-scanner',
-        method: 'getAsset',
-        params: {
-          id: mintAddress,
-        },
+        jsonrpc: '2.0', id: 'ahab-scanner', method: 'getAsset', params: { id: mintAddress },
       }),
     });
 
     const data = await response.json();
     
     if (data.error) {
-        // Handle specific API limits gracefully without error spam
+        // Fix: Handle specific API limits gracefully without error spam
         if (data.error.code === -32429) {
             console.warn("Helius API Limit Reached: Switching to fallback data.");
         } else {
@@ -86,4 +78,28 @@ export const fetchTokenAsset = async (mintAddress: string): Promise<HeliusAssetR
     console.error("Failed to fetch asset from Helius (Network Error):", error);
     return FALLBACK_WHALE_DATA;
   }
+};
+
+// Idea 4: Fetch Recent Transactions (Simulated for Demo/Reliability)
+export const fetchRecentBounties = async (): Promise<BountyTx[]> => {
+    // In production, this would use getSignaturesForAddress
+    const now = Date.now();
+    return Array.from({ length: 6 }).map((_, i) => ({
+        signature: `sig${now}-${i}`,
+        amount: Math.floor(Math.random() * 500000) + 10000,
+        buyer: `0x${Math.random().toString(16).substr(2, 4)}...${Math.random().toString(16).substr(2, 4)}`,
+        timestamp: now - (i * 100000)
+    }));
+};
+
+// Idea 1: Market Weather Logic
+export type WeatherState = 'STORM' | 'CALM' | 'FOG';
+
+export const getMarketWeather = async (): Promise<WeatherState> => {
+    // Simulated based on random volatility for the blueprint
+    // Real impl would check % change over last hour
+    const rand = Math.random();
+    if (rand < 0.4) return 'STORM'; // Bearish/High Volatility
+    if (rand < 0.7) return 'CALM';  // Bullish/Steady
+    return 'FOG';                   // Low Volume
 };

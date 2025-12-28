@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { SectionId, ChatMessage } from '../types';
-import { generateAhabWisdom } from '../services/geminiService';
-import { Send, MessageSquareWarning } from 'lucide-react';
+import { generateAhabWisdom, generateAhabSpeech } from '../services/geminiService';
+import { Send, MessageSquareWarning, Volume2 } from 'lucide-react';
 
 export const WhaleOracle: React.FC = () => {
   const [query, setQuery] = useState('');
@@ -11,12 +11,36 @@ export const WhaleOracle: React.FC = () => {
   ]);
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [history]);
+
+  const playAudio = async (base64Audio: string) => {
+      try {
+        if (!audioContextRef.current) {
+            audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        }
+        const ctx = audioContextRef.current;
+        const audioStr = atob(base64Audio);
+        const len = audioStr.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = audioStr.charCodeAt(i);
+        }
+        
+        const audioBuffer = await ctx.decodeAudioData(bytes.buffer);
+        const source = ctx.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(ctx.destination);
+        source.start(0);
+      } catch (e) {
+          console.error("Audio playback failed", e);
+      }
+  };
 
   const handleAsk = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,9 +51,15 @@ export const WhaleOracle: React.FC = () => {
     setLoading(true);
     setHistory(prev => [...prev, { role: 'user', text: userText }]);
 
-    const response = await generateAhabWisdom(userText);
+    // Get Text Response
+    const textResponse = await generateAhabWisdom(userText);
+    setHistory(prev => [...prev, { role: 'model', text: textResponse }]);
     
-    setHistory(prev => [...prev, { role: 'model', text: response }]);
+    // Get Audio Response (fire and forget to not block UI)
+    generateAhabSpeech(textResponse).then(audioData => {
+        if (audioData) playAudio(audioData);
+    });
+
     setLoading(false);
   };
 
@@ -38,7 +68,12 @@ export const WhaleOracle: React.FC = () => {
       <div className="w-full max-w-3xl">
         <div className="flex items-center gap-3 mb-8 justify-center">
             <MessageSquareWarning className="text-yellow-400 w-10 h-10 animate-bounce" />
-            <h2 className="text-4xl md:text-5xl font-meme text-white">ASK <span className="text-yellow-400">THE CAPTAIN</span></h2>
+            <div className="text-center">
+                <h2 className="text-4xl md:text-5xl font-meme text-white">ASK <span className="text-yellow-400">THE CAPTAIN</span></h2>
+                <div className="flex items-center justify-center gap-2 text-xs font-mono text-cyan-400 mt-1">
+                    <Volume2 size={12} /> AUDIO ENABLED (GEMINI 2.5)
+                </div>
+            </div>
         </div>
 
         <div className="bg-[#111] border-4 border-slate-800 rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
@@ -56,8 +91,8 @@ export const WhaleOracle: React.FC = () => {
                     : 'bg-yellow-500 text-black rounded-tl-none font-meme text-xl tracking-wide'
                 }`}>
                   {msg.role === 'model' && (
-                    <div className="absolute -top-6 left-0 bg-yellow-400 text-black text-xs px-2 py-1 rounded font-bold border border-black">
-                        CPT. AHAB 🐋
+                    <div className="absolute -top-6 left-0 bg-yellow-400 text-black text-xs px-2 py-1 rounded font-bold border border-black flex items-center gap-1">
+                        <span>CPT. AHAB 🐋</span>
                     </div>
                   )}
                   {msg.text}

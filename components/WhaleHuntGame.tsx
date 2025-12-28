@@ -2,213 +2,267 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SectionId } from '../types';
 import confetti from 'canvas-confetti';
-import { Trophy, Crosshair } from 'lucide-react';
+import { Trophy, Gauge, ShipWheel, Zap, Skull, ShieldAlert } from 'lucide-react';
 
-interface Harpoon {
+interface GameEntity {
   id: number;
   x: number;
   y: number;
-  rotation: number;
+  type: 'harpoon' | 'iceberg' | 'coin';
+  rotation?: number;
 }
 
 export const WhaleHuntGame: React.FC = () => {
   const [score, setScore] = useState(0);
-  const [whalePos, setWhalePos] = useState({ top: '50%', left: '50%' });
+  const [hull, setHull] = useState(100);
+  const [whalePos, setWhalePos] = useState({ y: 50, x: 80 }); // % coordinates
   const [isPlaying, setIsPlaying] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(30);
-  const [hits, setHits] = useState<{id: number, x: number, y: number, val: string}[]>([]);
-  const [harpoons, setHarpoons] = useState<Harpoon[]>([]);
-  const [isStriking, setIsStriking] = useState(false);
+  const [entities, setEntities] = useState<GameEntity[]>([]);
+  const [throttle, setThrottle] = useState(0); // 0 to 100 speed
+  const [helmAngle, setHelmAngle] = useState(0);
+  
+  // Use ReturnType<typeof setInterval> to be environment agnostic and avoid NodeJS namespace issues
+  const gameLoopRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const gameAreaRef = useRef<HTMLDivElement>(null);
 
-  const moveWhale = () => {
-    if (!gameAreaRef.current) return;
-    const x = Math.random() * 80 + 10; 
-    const y = Math.random() * 80 + 10;
-    setWhalePos({ top: `${y}%`, left: `${x}%` });
+  // --- GAME LOOP ---
+  useEffect(() => {
+    if (isPlaying) {
+      gameLoopRef.current = setInterval(() => {
+        setEntities(prev => {
+          const next = prev.map(e => {
+            // Harpoons move RIGHT
+            if (e.type === 'harpoon') return { ...e, x: e.x + 2 };
+            // Icebergs/Coins move LEFT based on throttle
+            if (e.type === 'iceberg' || e.type === 'coin') return { ...e, x: e.x - (0.5 + throttle / 50) };
+            return e;
+          }).filter(e => e.x > -10 && e.x < 110); // Despawn out of bounds
+
+          // Collision Logic
+          // 1. Harpoon hits Whale
+          next.forEach((e, idx) => {
+             if (e.type === 'harpoon') {
+                 // Simple box collision approximation
+                 if (e.x > whalePos.x - 5 && e.x < whalePos.x + 5 && Math.abs(e.y - whalePos.y) < 10) {
+                     setScore(s => s + 100);
+                     // Remove harpoon
+                     next.splice(idx, 1);
+                     // Whale moves on hit
+                     setWhalePos(p => ({ ...p, y: Math.max(10, Math.min(90, p.y + (Math.random() * 40 - 20))) }));
+                 }
+             }
+          });
+
+          return next;
+        });
+
+        // Move Whale Naturally
+        setWhalePos(prev => ({
+            ...prev,
+            y: Math.max(10, Math.min(90, prev.y + Math.sin(Date.now() / 1000) * 0.5))
+        }));
+
+        // Spawn Obstacles logic
+        if (Math.random() < (0.02 + throttle/2000)) {
+            spawnEntity(Math.random() > 0.8 ? 'coin' : 'iceberg');
+        }
+
+        // Hull Damage / Score Passive
+        if (throttle > 0) setScore(s => s + 1);
+
+      }, 30);
+    } else {
+        if (gameLoopRef.current) clearInterval(gameLoopRef.current);
+    }
+
+    return () => {
+        if (gameLoopRef.current) clearInterval(gameLoopRef.current);
+    };
+  }, [isPlaying, throttle, whalePos]);
+
+  const spawnEntity = (type: 'iceberg' | 'coin') => {
+      setEntities(prev => [...prev, {
+          id: Date.now() + Math.random(),
+          x: 100,
+          y: Math.random() * 80 + 10,
+          type
+      }]);
+  };
+
+  const fireHarpoon = () => {
+      if (!isPlaying || hull <= 0) return;
+      setEntities(prev => [...prev, {
+          id: Date.now(),
+          x: 10,
+          y: 50 + (Math.random() * 10 - 5), // Shoots from center-ish with spread
+          type: 'harpoon',
+          rotation: 0
+      }]);
+      setHelmAngle(prev => prev + 45);
   };
 
   const startGame = () => {
-    setIsPlaying(true);
-    setScore(0);
-    setTimeLeft(30);
-    setHits([]);
-    setHarpoons([]);
-    moveWhale();
+      setIsPlaying(true);
+      setScore(0);
+      setHull(100);
+      setThrottle(50);
+      setEntities([]);
   };
 
-  const handleWhaleClick = (e: React.MouseEvent) => {
-    if (!isPlaying) return;
-    
-    // Trigger visual strike
-    setIsStriking(true);
-    setTimeout(() => setIsStriking(false), 100);
+  const stopGame = () => {
+      setIsPlaying(false);
+      setThrottle(0);
+      if (score > 0) confetti();
+  };
 
-    // Add score
-    const points = Math.floor(Math.random() * 100) + 50;
-    setScore(prev => prev + points);
-
-    const rect = gameAreaRef.current?.getBoundingClientRect();
-    if (rect) {
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const rotation = Math.random() * 60 - 30; // Random angle variance
-        
-        // Add hit text
-        const newHit = { id: Date.now(), x, y, val: `+${points}` };
-        setHits(prev => [...prev, newHit]);
-        setTimeout(() => setHits(prev => prev.filter(h => h.id !== newHit.id)), 1000);
-
-        // Add harpoon graphic
-        const newHarpoon = { id: Date.now() + Math.random(), x, y, rotation };
-        setHarpoons(prev => [...prev, newHarpoon]);
-        // Keep harpoon visible for a moment
-        setTimeout(() => setHarpoons(prev => prev.filter(h => h.id !== newHarpoon.id)), 2000);
-    }
-
-    moveWhale();
-
-    if (Math.random() > 0.7) {
-        confetti({
-            particleCount: 30,
-            spread: 50,
-            origin: { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight },
-            colors: ['#ef4444', '#ffffff'] // Red and White for blood/foam
-        });
-    }
+  // Manual throttle adjustment
+  const handleThrottle = (e: React.ChangeEvent<HTMLInputElement>) => {
+      setThrottle(parseInt(e.target.value));
   };
 
   useEffect(() => {
-    if (isPlaying && timeLeft > 0) {
-      const timer = setTimeout(() => setTimeLeft(prev => prev - 1), 1000);
-      return () => clearTimeout(timer);
-    } else if (isPlaying && timeLeft === 0) {
-      setIsPlaying(false);
-      confetti({
-        particleCount: 200,
-        spread: 100,
-        origin: { y: 0.6 }
-      });
-    }
-  }, [isPlaying, timeLeft]);
+      if (hull <= 0 && isPlaying) {
+          stopGame();
+      }
+  }, [hull]);
 
   return (
     <section id={SectionId.GAME} className="py-20 bg-slate-900 relative overflow-hidden">
-      <div className="max-w-4xl mx-auto px-4 text-center">
-        <h2 className="font-meme text-5xl md:text-6xl text-cyan-400 mb-2 drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]">
-          HARPOON THE BEAST
-        </h2>
-        <p className="text-slate-400 font-mono mb-8">Strike with violent intent.</p>
+      <div className="max-w-5xl mx-auto px-4">
+        <div className="text-center mb-8">
+            <h2 className="font-meme text-5xl md:text-6xl text-cyan-400 mb-2 drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]">
+            HUNT THE WHALE
+            </h2>
+            <p className="text-slate-400 font-mono">Dodge JEET Icebergs. Harpoon the Whale. Speed Kills.</p>
+        </div>
 
-        <div className="relative w-full aspect-video bg-slate-950 rounded-3xl border-4 border-cyan-800 overflow-hidden shadow-2xl cursor-crosshair select-none" ref={gameAreaRef}>
-           {/* HUD */}
-           <div className="absolute top-4 left-4 right-4 flex justify-between z-20 pointer-events-none">
-              <div className="bg-slate-900/90 backdrop-blur border border-cyan-500 text-cyan-400 px-6 py-2 rounded-xl font-meme text-2xl flex items-center gap-2 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
-                 <Trophy size={24} className="text-yellow-400" /> {score} <span className="text-xs font-mono pt-1 text-slate-400">BAGS</span>
-              </div>
-              <div className="bg-slate-900/90 backdrop-blur border border-red-500 text-red-500 px-6 py-2 rounded-xl font-meme text-2xl shadow-[0_0_15px_rgba(239,68,68,0.3)]">
-                 {timeLeft}s
-              </div>
+        {/* SHIP CONSOLE CONTAINER */}
+        <div className="relative bg-slate-800 rounded-3xl border-4 border-slate-700 overflow-hidden shadow-2xl">
+           
+           {/* VIEWSCREEN */}
+           <div className="relative w-full aspect-video bg-[#020617] overflow-hidden border-b-4 border-slate-700 cursor-crosshair select-none" ref={gameAreaRef}>
+                
+                {/* Moving Background (Parallax) */}
+                <motion.div 
+                    className="absolute inset-0 opacity-20"
+                    style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/cubes.png")' }}
+                    animate={{ backgroundPositionX: [0, -1000] }}
+                    transition={{ repeat: Infinity, duration: 20 - (throttle / 5), ease: "linear" }}
+                />
+
+                {/* GAME OVER OVERLAY */}
+                {!isPlaying && (
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+                        {hull <= 0 ? (
+                            <div className="text-center">
+                                <h3 className="font-meme text-6xl text-red-500 mb-2">HULL BREACHED</h3>
+                                <p className="text-white font-mono mb-6">SCORE: {score}</p>
+                            </div>
+                        ) : (
+                            <div className="text-center">
+                                <h3 className="font-tech text-cyan-500 mb-4 animate-pulse tracking-widest">SYSTEM STANDBY</h3>
+                            </div>
+                        )}
+                        <button 
+                            onClick={startGame}
+                            className="bg-green-600 hover:bg-green-500 text-black font-black font-meme text-3xl px-8 py-4 rounded clip-path-polygon"
+                        >
+                            {score > 0 ? 'RE-DEPLOY' : 'START ENGINES'}
+                        </button>
+                    </div>
+                )}
+
+                {/* HUD */}
+                <div className="absolute top-4 left-4 z-40 flex gap-4">
+                    <div className="bg-black/50 border border-green-500 px-3 py-1 rounded text-green-500 font-mono text-xs">
+                        SPEED: {throttle} KNOTS
+                    </div>
+                </div>
+
+                {/* ENTITIES */}
+                <AnimatePresence>
+                    {entities.map(e => (
+                        <motion.div
+                            key={e.id}
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1, x: `${e.x}%`, y: `${e.y}%` }}
+                            className="absolute w-8 h-8 -ml-4 -mt-4 flex items-center justify-center text-2xl"
+                        >
+                            {e.type === 'harpoon' && '⇝'}
+                            {e.type === 'iceberg' && '🧊'}
+                            {e.type === 'coin' && '💰'}
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+
+                {/* THE WHALE */}
+                <motion.div
+                    animate={{ top: `${whalePos.y}%`, left: `${whalePos.x}%` }}
+                    transition={{ type: "spring", stiffness: 50 }}
+                    className="absolute z-20 text-6xl drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]"
+                >
+                    🐋
+                </motion.div>
+
+                {/* PLAYER SHIP CROSSHAIR */}
+                <div className="absolute top-1/2 left-4 w-12 h-12 border-2 border-cyan-500 rounded-full flex items-center justify-center opacity-50">
+                    <div className="w-1 h-1 bg-cyan-500 rounded-full" />
+                </div>
+
            </div>
 
-           {/* Game Start/End Overlay */}
-           {!isPlaying && (
-             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm z-30 flex flex-col items-center justify-center">
-                {timeLeft === 0 ? (
-                    <div className="text-center mb-6 animate-pulse">
-                        <h3 className="font-meme text-6xl text-yellow-400 mb-2 drop-shadow-lg">HUNT OVER</h3>
-                        <p className="text-white font-display text-2xl">Loot Secured: {score} $AHAB</p>
-                    </div>
-                ) : null}
-                <button 
-                    onClick={startGame}
-                    className="bg-red-600 hover:bg-red-500 text-white font-black font-meme text-4xl px-12 py-6 rounded-2xl border-b-[8px] border-red-900 active:border-b-0 active:translate-y-2 transition-all shadow-[0_0_50px_rgba(220,38,38,0.6)]"
-                >
-                    {timeLeft === 0 ? 'RELOAD HARPOON' : 'START HUNT'}
-                </button>
-             </div>
-           )}
+           {/* CONTROL DECK */}
+           <div className="bg-[#0f172a] p-6 flex flex-col md:flex-row items-center justify-between gap-8 border-t-2 border-slate-600">
+               
+               {/* Left: HULL INTEGRITY */}
+               <div className="flex items-center gap-4 w-1/3">
+                   <div className="relative w-full h-12 bg-black rounded-lg border border-slate-600 overflow-hidden">
+                       <div 
+                         className={`absolute inset-0 ${hull < 30 ? 'bg-red-600 animate-pulse' : 'bg-green-600'}`} 
+                         style={{ width: `${hull}%` }}
+                       />
+                       <div className="absolute inset-0 flex items-center justify-center font-black font-tech text-white z-10 shadow-black drop-shadow-md">
+                           HULL INTEGRITY {hull}%
+                       </div>
+                   </div>
+               </div>
 
-           {/* Harpoons (Stuck in whale or missed) */}
-           <AnimatePresence>
-             {harpoons.map(harpoon => (
-                <motion.div
-                  key={harpoon.id}
-                  initial={{ opacity: 0, scale: 2, x: 20, y: -20 }}
-                  animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  className="absolute pointer-events-none z-10 w-16 h-16"
-                  style={{ 
-                      left: harpoon.x - 32, 
-                      top: harpoon.y - 32, 
-                      rotate: `${harpoon.rotation + 45}deg` 
-                  }}
-                >
-                    {/* SVG Harpoon Graphic */}
-                    <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md filter brightness-110">
-                        <line x1="10" y1="90" x2="80" y2="20" stroke="#94a3b8" strokeWidth="4" />
-                        <path d="M80 20 L95 5 L85 25 Z" fill="#ef4444" stroke="#7f1d1d" strokeWidth="1" />
-                        <circle cx="80" cy="20" r="3" fill="#7f1d1d" />
-                    </svg>
-                </motion.div>
-             ))}
-           </AnimatePresence>
+               {/* Center: FIRE BUTTON & WHEEL */}
+               <div className="flex flex-col items-center justify-center relative w-1/3">
+                   <motion.button 
+                        whileTap={{ scale: 0.9 }}
+                        animate={{ rotate: helmAngle }}
+                        onClick={fireHarpoon}
+                        className="w-24 h-24 bg-gradient-to-br from-yellow-700 to-yellow-900 rounded-full border-4 border-yellow-500 shadow-xl flex items-center justify-center active:border-white"
+                   >
+                       <ShipWheel size={50} className="text-yellow-200" />
+                   </motion.button>
+                   <span className="text-xs text-slate-500 mt-2 font-mono">TAP TO FIRE</span>
+               </div>
 
-           {/* The White Whale */}
-           <AnimatePresence>
-            {isPlaying && (
-                <motion.button
-                    layout
-                    // Breathing & Swimming Animation
-                    animate={{ 
-                        scale: isStriking ? 0.9 : [1, 1.05, 1], // Breathing / Flinch on hit
-                        rotate: [0, -3, 3, 0], // Gentle rocking
-                        y: [0, -10, 0], // Floating up and down
-                    }}
-                    transition={{ 
-                        scale: { duration: isStriking ? 0.1 : 2, repeat: isStriking ? 0 : Infinity, ease: "easeInOut" },
-                        rotate: { duration: 4, repeat: Infinity, ease: "easeInOut" },
-                        y: { duration: 3, repeat: Infinity, ease: "easeInOut" },
-                        layout: { duration: 0.2 } // Smooth movement between random positions
-                    }}
-                    style={{ top: whalePos.top, left: whalePos.left }}
-                    className="absolute w-32 h-32 -ml-16 -mt-16 z-10 cursor-none" // Hide default cursor over whale
-                    onClick={handleWhaleClick}
-                >
-                    {/* Custom Harpoon Cursor on Hover would be ideal, but using Emoji for Whale */}
-                    <div className={`w-full h-full text-8xl drop-shadow-[0_15px_15px_rgba(0,0,0,0.6)] transition-all ${isStriking ? 'brightness-150 grayscale-0' : 'grayscale-[20%]'}`}>
-                       🐋
-                    </div>
-                </motion.button>
-            )}
-           </AnimatePresence>
+               {/* Right: THROTTLE SLIDER */}
+               <div className="flex items-center gap-4 w-1/3 justify-end">
+                   <div className="flex flex-col items-end w-full">
+                       <label className="text-xs font-mono text-cyan-400 mb-1 flex items-center gap-2">
+                           <Zap size={12} /> ENGINE THROTTLE
+                       </label>
+                       <input 
+                           type="range" 
+                           min="0" 
+                           max="100" 
+                           value={throttle} 
+                           onChange={handleThrottle}
+                           disabled={!isPlaying}
+                           className="w-full h-4 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500 hover:accent-cyan-400"
+                       />
+                       <div className="flex justify-between w-full text-[10px] text-slate-500 mt-1 font-mono">
+                           <span>IDLE</span>
+                           <span>FLANK SPEED</span>
+                       </div>
+                   </div>
+               </div>
 
-           {/* Hit Numbers */}
-           {hits.map(hit => (
-               <motion.div
-                 key={hit.id}
-                 initial={{ opacity: 1, y: 0, scale: 0.5, rotate: Math.random() * 20 - 10 }}
-                 animate={{ opacity: 0, y: -100, scale: 2 }}
-                 transition={{ duration: 0.8 }}
-                 className="absolute text-yellow-400 font-black font-meme text-5xl pointer-events-none z-20"
-                 style={{ 
-                     left: hit.x, 
-                     top: hit.y, 
-                     textShadow: '3px 3px 0 #000, -1px -1px 0 #000' 
-                 }}
-               >
-                   {hit.val}
-               </motion.div>
-           ))}
-           
-           {/* Ocean Grid / Radar Lines */}
-           <div className="absolute inset-0 opacity-10 pointer-events-none" 
-                style={{ 
-                    backgroundImage: 'linear-gradient(#22d3ee 1px, transparent 1px), linear-gradient(90deg, #22d3ee 1px, transparent 1px)',
-                    backgroundSize: '60px 60px'
-                }} 
-            />
+           </div>
         </div>
       </div>
     </section>

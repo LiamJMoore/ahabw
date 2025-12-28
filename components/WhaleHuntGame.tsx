@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SectionId } from '../types';
 import confetti from 'canvas-confetti';
-import { Trophy, Gauge, ShipWheel, Zap, Skull, ShieldAlert } from 'lucide-react';
+import { ShipWheel, Zap, Skull } from 'lucide-react';
 
 interface GameEntity {
   id: number;
@@ -30,30 +30,49 @@ export const WhaleHuntGame: React.FC = () => {
     if (isPlaying) {
       gameLoopRef.current = setInterval(() => {
         setEntities(prev => {
-          const next = prev.map(e => {
+          // 1. Calculate new positions
+          const moved = prev.map(e => {
             // Harpoons move RIGHT
             if (e.type === 'harpoon') return { ...e, x: e.x + 2 };
             // Icebergs/Coins move LEFT based on throttle
             if (e.type === 'iceberg' || e.type === 'coin') return { ...e, x: e.x - (0.5 + throttle / 50) };
             return e;
-          }).filter(e => e.x > -10 && e.x < 110); // Despawn out of bounds
-
-          // Collision Logic
-          // 1. Harpoon hits Whale
-          next.forEach((e, idx) => {
-             if (e.type === 'harpoon') {
-                 // Simple box collision approximation
-                 if (e.x > whalePos.x - 5 && e.x < whalePos.x + 5 && Math.abs(e.y - whalePos.y) < 10) {
-                     setScore(s => s + 100);
-                     // Remove harpoon
-                     next.splice(idx, 1);
-                     // Whale moves on hit
-                     setWhalePos(p => ({ ...p, y: Math.max(10, Math.min(90, p.y + (Math.random() * 40 - 20))) }));
-                 }
-             }
           });
 
-          return next;
+          // 2. Handle Collisions & Bounds
+          return moved.reduce<GameEntity[]>((acc, e) => {
+             let keep = true;
+
+             // Collision A: Harpoon hits Whale
+             if (e.type === 'harpoon') {
+                 if (e.x > whalePos.x - 5 && e.x < whalePos.x + 5 && Math.abs(e.y - whalePos.y) < 10) {
+                     setScore(s => s + 100);
+                     // Whale reacts
+                     setWhalePos(p => ({ ...p, y: Math.max(10, Math.min(90, p.y + (Math.random() * 40 - 20))) }));
+                     keep = false; // Harpoon destroyed
+                 }
+             }
+
+             // Collision B: Obstacle hits Ship (Player is at x=0)
+             if ((e.type === 'iceberg' || e.type === 'coin') && e.x <= 0) {
+                 if (e.type === 'iceberg') {
+                     // Damage Hull
+                     setHull(h => Math.max(0, h - 20));
+                 } else {
+                     // Collect Coin
+                     setScore(s => s + 50);
+                 }
+                 keep = false; // Entity removed upon impact
+             }
+
+             // Cleanup: Out of bounds
+             if (e.x > 110 || e.x < -10) {
+                 keep = false;
+             }
+
+             if (keep) acc.push(e);
+             return acc;
+          }, []);
         });
 
         // Move Whale Naturally
@@ -67,7 +86,7 @@ export const WhaleHuntGame: React.FC = () => {
             spawnEntity(Math.random() > 0.8 ? 'coin' : 'iceberg');
         }
 
-        // Hull Damage / Score Passive
+        // Score Passive (Reward for speed)
         if (throttle > 0) setScore(s => s + 1);
 
       }, 30);
@@ -154,7 +173,8 @@ export const WhaleHuntGame: React.FC = () => {
                 {!isPlaying && (
                     <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
                         {hull <= 0 ? (
-                            <div className="text-center">
+                            <div className="text-center flex flex-col items-center">
+                                <Skull size={64} className="text-red-500 mb-4 animate-pulse" />
                                 <h3 className="font-meme text-6xl text-red-500 mb-2">HULL BREACHED</h3>
                                 <p className="text-white font-mono mb-6">SCORE: {score}</p>
                             </div>
@@ -165,7 +185,7 @@ export const WhaleHuntGame: React.FC = () => {
                         )}
                         <button 
                             onClick={startGame}
-                            className="bg-green-600 hover:bg-green-500 text-black font-black font-meme text-3xl px-8 py-4 rounded clip-path-polygon"
+                            className="bg-green-600 hover:bg-green-500 text-black font-black font-meme text-3xl px-8 py-4 rounded clip-path-polygon hover:scale-105 transition-transform"
                         >
                             {score > 0 ? 'RE-DEPLOY' : 'START ENGINES'}
                         </button>

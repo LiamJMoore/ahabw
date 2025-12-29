@@ -8,7 +8,7 @@ import { TARGET_WHALE_CA } from '../constants';
 const LOG_ENTRIES = [
     {
         day: "Day 0: THE REKTENING",
-        text: "It wasn't just a trade. It was a slaughter. The White Whale ($1B MCAP) didn't just dump... he devoured. One massive red candle that took my leg, my liquidity, and my sanity. I stared at the liquidation email and laughed. They think I'm broke. I'm just liberated.",
+        text: "It wasn't just a trade. It was a slaughter. The $whitewhale ($69M MCAP) didn't just rise... he devoured. One massive green candle that took my leg, my liquidity, and my sanity. I stared at the liquidation email and laughed. They think I'm broke. I'm just liberated.",
         signature: "Ahab (Pre-Voyage)"
     },
     {
@@ -141,18 +141,18 @@ export const Lore: React.FC = () => {
             {[
                 { 
                     icon: <Skull className="text-red-500" size={32} />, 
-                    title: "THE ORIGIN: THE RUG PULL", 
-                    text: "Years ago, a wallet known as 'Moby' drained a liquidity pool worth millions. Ahab was the largest provider. He didn't lose funds; he lost his purpose. $AHAB is the reincarnation of that lost liquidity, forged into a weapon." 
+                    title: "THE ORIGIN", 
+                    text: "Captain Ahab is the same man who once crossed an ocean in pursuit of the fabled white whale. That hunt cost him his leg and left him unable to accept a world where immense power acts without consequence. He has heard rumours that his foe returning from the deep, reincarnated as the cryptocurrency $whitewhale." 
                 },
                 { 
                     icon: <AlertTriangle className="text-yellow-400" size={32} />, 
-                    title: "THE ENEMY: $WHALE", 
-                    text: `The White Whale token sits at ${whaleMcap}. It is bloated, centralized, and arrogant. It moves slow. It thinks it is too big to fail. We are the harpoon that will pop the bubble.` 
+                    title: "THE ENEMY", 
+                    text: "The $whitewhale moves with discipline, scale, and indifference, shaping outcomes without explanation or regard for those it affects. To Ahab, this is not mastery to be admired but an intolerable insult that must be forced into conflict, even if the cost is his own destruction." 
                 },
                 { 
                     icon: <TrendingUp className="text-green-400" size={32} />, 
                     title: "THE GOAL: THE FLIPPENING", 
-                    text: "We do not rest until $AHAB market cap exceeds $WHALE. It is a mathematical certainty driven by sheer willpower. We trade with violent intent." 
+                    text: "We do not rest until $AHAB market cap exceeds $whitewhale. It is a mathematical certainty driven by sheer willpower. We trade with violent intent." 
                 }
             ].map((item, i) => (
                 <motion.div

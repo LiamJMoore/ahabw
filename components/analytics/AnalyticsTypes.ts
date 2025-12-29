@@ -10,6 +10,10 @@ export interface Holder {
   tag?: string;
   heldSince: string;
   isOldfag: boolean;
+  // New Fields
+  daysHeld: number;
+  hasSold: boolean;
+  diamondHands: boolean;
 }
 
 export interface WhaleTx {

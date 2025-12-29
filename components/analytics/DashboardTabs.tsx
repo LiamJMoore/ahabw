@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { RefreshCw, Zap, Flame, Building2, Search, ExternalLink } from 'lucide-react';
+import { RefreshCw, Zap, Flame, Building2, Search, ExternalLink, Gem, Skull } from 'lucide-react';
 import { formatCompactNumber, formatCurrency, truncateAddress } from '../../utils';
 import { Holder, WhaleTx, Memo } from './AnalyticsTypes';
 
@@ -17,7 +17,8 @@ export const HoldersTab: React.FC<{ holders: Holder[], loading: boolean, onInspe
                     <tr>
                         <th className="p-2 w-12">#</th>
                         <th className="p-2">IDENTITY</th>
-                        <th className="p-2">SERVICE TIME</th>
+                        <th className="p-2">LOYALTY</th>
+                        <th className="p-2">DURATION</th>
                         <th className="p-2 text-right">HOLDINGS</th>
                         <th className="p-2 text-right">VALUE (USD)</th>
                         <th className="p-2 text-right">SHARE</th>
@@ -26,7 +27,7 @@ export const HoldersTab: React.FC<{ holders: Holder[], loading: boolean, onInspe
                 </thead>
                 <tbody className="divide-y divide-cyan-900/20">
                     {holders.map((h, i) => (
-                        <tr key={i} className="hover:bg-cyan-900/10 transition-colors">
+                        <tr key={i} className={`hover:bg-cyan-900/10 transition-colors ${h.diamondHands ? 'bg-cyan-950/10' : ''}`}>
                             <td className="p-2 text-cyan-700">{h.rank}</td>
                             <td className="p-2 flex items-center gap-2">
                                 <a 
@@ -45,13 +46,29 @@ export const HoldersTab: React.FC<{ holders: Holder[], loading: boolean, onInspe
                                     <Search size={12}/>
                                 </button>
                             </td>
-                            <td className="p-2 text-slate-500">
-                                {h.isOldfag && <span title="Old Salt" className="mr-1">⚓️</span>} {h.heldSince}
+                            <td className="p-2">
+                                {h.diamondHands ? (
+                                    <span className="flex items-center gap-1 text-cyan-300 font-bold text-[10px] bg-cyan-950/50 px-2 py-0.5 rounded border border-cyan-800">
+                                        <Gem size={10} className="fill-cyan-400 text-cyan-200 animate-pulse"/> DIAMOND
+                                    </span>
+                                ) : h.hasSold ? (
+                                    <span className="flex items-center gap-1 text-red-400 text-[10px] opacity-70">
+                                        🧻 PAPER
+                                    </span>
+                                ) : (
+                                    <span className="text-slate-500 text-[10px]">HODLING</span>
+                                )}
+                            </td>
+                            <td className="p-2 text-slate-400 font-mono">
+                                <div className="flex flex-col">
+                                    <span className={h.daysHeld > 14 ? "text-green-500 font-bold" : ""}>{h.daysHeld} Days</span>
+                                    <span className="text-[9px] opacity-50">{h.heldSince}</span>
+                                </div>
                             </td>
                             <td className="p-2 text-right text-cyan-200">{formatCompactNumber(h.amount)}</td>
                             <td className="p-2 text-right text-green-500">{formatCompactNumber(h.value)}</td>
                             <td className="p-2 text-right text-slate-400">{h.percentage.toFixed(2)}%</td>
-                            <td className="p-2 pl-4 text-cyan-700 italic">{h.tag || 'SAILOR'}</td>
+                            <td className="p-2 pl-4 text-cyan-700 italic">{h.tag || (h.diamondHands ? 'VETERAN' : 'SAILOR')}</td>
                         </tr>
                     ))}
                 </tbody>

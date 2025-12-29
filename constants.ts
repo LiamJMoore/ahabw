@@ -26,8 +26,8 @@ export const MANIFESTO_PARAGRAPHS = [
 // --- FLIPPENING CONFIG ---
 export const HELIUS_API_KEY = 'f7d6a830-5ce4-436e-bd8d-73f75b0f0c52';
 export const TARGET_WHALE_CA = 'a3W4qutoEJA4232T2gwZUfgYJTetr96pU4SJMwppump'; // $WhiteWhale
-// Official Placeholder - 44 chars to mimic real SOL address
-export const AHAB_CA = 'AHABxP2x7tXg9yZ3p4kL5mN6qR8sV1wJ0bC3dE4fG5hT'; 
+// Official CA
+export const AHAB_CA = 'a3W4qutoEJA4232T2gwZUfgYJTetr96pU4SJMwppump'; 
 
 // Simulated Data for the "Live" feel until $AHAB is live
 export const AHAB_PLACEHOLDER_STATS = {

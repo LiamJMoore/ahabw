@@ -331,12 +331,26 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
      } finally { setLoadingWhales(false); }
   };
 
-  const getHeldSince = (rank: number, seedStr: string): { date: string, isOldfag: boolean } => {
-      if (rank <= 5) return { date: "Day 1 (Dev Launch)", isOldfag: true };
-      const daysAgo = (seedStr.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 30) + 1; 
-      const date = new Date(); date.setDate(date.getDate() - daysAgo);
-      const mm = String(date.getMonth() + 1).padStart(2, '0'); const dd = String(date.getDate()).padStart(2, '0');
-      return { date: `${mm}/${dd} (${daysAgo}d ago)`, isOldfag: daysAgo > 14 };
+  const getHeldSince = (rank: number, seedStr: string): { date: string, isOldfag: boolean, daysHeld: number } => {
+      // Logic for holding duration
+      let daysHeld = 0;
+      if (rank <= 5) {
+          daysHeld = 45; // Dev/Early
+      } else {
+          // Generate realistic day counts between 1 and 40
+          daysHeld = (seedStr.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 40) + 1;
+      }
+
+      const date = new Date(); 
+      date.setDate(date.getDate() - daysHeld);
+      const mm = String(date.getMonth() + 1).padStart(2, '0'); 
+      const dd = String(date.getDate()).padStart(2, '0');
+      
+      return { 
+          date: `${mm}/${dd}`, 
+          isOldfag: daysHeld > 14,
+          daysHeld
+      };
   };
 
   const fetchRealHolders = async () => {
@@ -351,8 +365,27 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
                 const pct = (amount / liveMetrics.supply) * 100;
                 let tag = undefined;
                 if (index === 0 && pct > 10) tag = "Raydium/LP?"; if (index === 1 && pct > 4) tag = "Dev/Team?";
-                const { date, isOldfag } = getHeldSince(index + 1, acc.address);
-                return { rank: index + 1, address: acc.address, amount: amount, percentage: parseFloat(pct.toFixed(2)), value: amount * liveMetrics.price, tag: tag, heldSince: date, isOldfag };
+                
+                const { date, isOldfag, daysHeld } = getHeldSince(index + 1, acc.address);
+                
+                // Simulate "Has Sold" logic based on address hash (deterministic for consistency)
+                // MODIFIED: Ensure top 5 wallets (Indices 0-4) are never marked as Sold
+                const hasSold = index > 4 && (acc.address.charCodeAt(0) % 3 === 0); 
+                const diamondHands = !hasSold && daysHeld > 7;
+
+                return { 
+                    rank: index + 1, 
+                    address: acc.address, 
+                    amount: amount, 
+                    percentage: parseFloat(pct.toFixed(2)), 
+                    value: amount * liveMetrics.price, 
+                    tag: tag, 
+                    heldSince: date, 
+                    isOldfag,
+                    daysHeld,
+                    hasSold,
+                    diamondHands
+                };
             });
             setHolders(realHolders);
         } else setHolders(generateLiveHolders());
@@ -378,15 +411,23 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
 
     const holders: Holder[] = fallbackData.map((d, i) => {
         const amount = liveMetrics.supply * (d.pct / 100);
+        const daysHeld = i < 3 ? 45 : Math.floor(Math.random() * 40) + 1;
+        // Top 3 never sell. Others have 30% chance of being sellers.
+        const hasSold = i > 3 && Math.random() > 0.7;
+        const diamondHands = !hasSold && daysHeld > 7;
+
         return {
             rank: i + 1,
-            address: d.addr, // This is now a full length string, so links work
+            address: d.addr, 
             amount: amount,
             percentage: d.pct,
             value: amount * liveMetrics.price,
             tag: d.tag,
             heldSince: i < 3 ? "Inception" : "Early Access",
-            isOldfag: true
+            isOldfag: daysHeld > 14,
+            daysHeld,
+            hasSold,
+            diamondHands
         };
     });
 

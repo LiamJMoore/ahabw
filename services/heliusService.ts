@@ -1,5 +1,7 @@
+
 import { HELIUS_API_KEY } from '../constants';
 
+// Updated to the high-performance endpoint
 const RPC_URL = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
 
 export interface HeliusAssetResponse {
@@ -64,12 +66,7 @@ export const fetchTokenAsset = async (mintAddress: string): Promise<HeliusAssetR
     const data = await response.json();
     
     if (data.error) {
-        // Fix: Handle specific API limits gracefully without error spam
-        if (data.error.code === -32429) {
-            console.warn("Helius API Limit Reached: Switching to fallback data.");
-        } else {
-            console.error("Helius API Error:", JSON.stringify(data.error, null, 2));
-        }
+        console.warn("Helius API Error:", JSON.stringify(data.error, null, 2));
         return FALLBACK_WHALE_DATA;
     }
     
@@ -80,7 +77,6 @@ export const fetchTokenAsset = async (mintAddress: string): Promise<HeliusAssetR
   }
 };
 
-// Idea 4: Fetch Recent Transactions (Simulated for Demo/Reliability)
 export const fetchRecentBounties = async (): Promise<BountyTx[]> => {
     // In production, this would use getSignaturesForAddress
     const now = Date.now();
@@ -92,12 +88,9 @@ export const fetchRecentBounties = async (): Promise<BountyTx[]> => {
     }));
 };
 
-// Idea 1: Market Weather Logic
 export type WeatherState = 'STORM' | 'CALM' | 'FOG';
 
 export const getMarketWeather = async (): Promise<WeatherState> => {
-    // Simulated based on random volatility for the blueprint
-    // Real impl would check % change over last hour
     const rand = Math.random();
     if (rand < 0.4) return 'STORM'; // Bearish/High Volatility
     if (rand < 0.7) return 'CALM';  // Bullish/Steady

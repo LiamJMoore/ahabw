@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { WeatherState } from '../services/heliusService';
 import { AHAB_CA } from '../constants';
-import { Copy, Check, Twitter, BarChart3, ExternalLink } from 'lucide-react';
+import { Copy, Check, Twitter, BarChart3 } from 'lucide-react';
 
 interface HeroProps {
     weather: WeatherState;

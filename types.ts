@@ -24,3 +24,10 @@ export interface ChatMessage {
   role: 'user' | 'model';
   text: string;
 }
+
+export interface TokenMetrics {
+  price: number;
+  marketCap: number;
+  supply: number;
+  ath?: number;
+}

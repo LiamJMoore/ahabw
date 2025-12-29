@@ -27,7 +27,7 @@ export const MANIFESTO_PARAGRAPHS = [
 export const HELIUS_API_KEY = 'f7d6a830-5ce4-436e-bd8d-73f75b0f0c52';
 export const TARGET_WHALE_CA = 'a3W4qutoEJA4232T2gwZUfgYJTetr96pU4SJMwppump'; // $WhiteWhale
 // Official CA
-export const AHAB_CA = 'a3W4qutoEJA4232T2gwZUfgYJTetr96pU4SJMwppump'; 
+export const AHAB_CA = 'AHABxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'; 
 
 // Simulated Data for the "Live" feel until $AHAB is live
 export const AHAB_PLACEHOLDER_STATS = {

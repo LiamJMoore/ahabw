@@ -495,7 +495,7 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
   const athPercent = liveMetrics.ath ? ((liveMetrics.price / liveMetrics.ath) * 100).toFixed(1) : "0";
 
   return (
-    <div className="relative max-w-[95%] sm:max-w-[960px] mx-auto mt-8 mb-8 border-[6px] border-[#0f172a] bg-[#020617] font-tech text-green-500 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] rounded-xl">
+    <div className="relative w-full max-w-[98%] 2xl:max-w-[1600px] mx-auto mt-8 mb-8 border-[6px] border-[#0f172a] bg-[#020617] font-tech text-green-500 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] rounded-xl">
       
       {/* CRT OVERLAY */}
       <div className="absolute inset-0 pointer-events-none z-50 crt opacity-50 mix-blend-screen" />

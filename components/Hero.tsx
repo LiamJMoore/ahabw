@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { WeatherState } from '../services/heliusService';
 import { AHAB_CA } from '../constants';
-import { Copy, Check, Twitter, BarChart3 } from 'lucide-react';
+import { Copy, Check, Twitter, BarChart3, Rocket } from 'lucide-react';
 
 interface HeroProps {
     weather: WeatherState;
@@ -126,24 +127,39 @@ export const Hero: React.FC<HeroProps> = ({ weather }) => {
             </button>
 
             {/* ACTION BUTTONS */}
-            <div className="flex gap-4 w-full md:w-auto">
+            <div className="flex flex-wrap gap-4 w-full md:w-auto justify-center">
+                
+                {/* BUY BUTTON */}
                 <a 
-                    href="#" 
-                    onClick={(e) => e.preventDefault()}
+                    href="https://pump.fun/coin/6Wv4Li6toFybiJajVN3ZBTi7hF8DGbujmewqc86tpump" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 text-white px-6 py-4 rounded-xl border-b-4 border-red-800 hover:border-red-900 font-meme tracking-widest text-xl transition-all hover:-translate-y-1 shadow-[0_0_20px_rgba(220,38,38,0.4)] min-w-[150px]"
+                >
+                    <Rocket size={24} className="animate-pulse" />
+                    <span>BUY</span>
+                </a>
+
+                {/* CHART BUTTON */}
+                <a 
+                    href="https://dexscreener.com/solana/edo9kgxuczcambfrpcpscuweu7i5jscuauxw294e8drj" 
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#1a1d21]/80 hover:bg-[#202429] backdrop-blur-md text-white px-6 py-4 rounded-xl border border-slate-700 hover:border-white font-tech transition-all hover:-translate-y-1 shadow-lg min-w-[120px]"
                 >
                     <BarChart3 size={18} className="text-cyan-500" />
                     <span>CHART</span>
                 </a>
 
+                {/* X BUTTON */}
                 <a 
                     href="https://x.com/CaptAhabCrypto" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-black/60 hover:bg-black backdrop-blur-md text-white px-6 py-4 rounded-xl border border-slate-700 hover:border-white font-tech transition-all hover:-translate-y-1 shadow-lg min-w-[120px]"
+                    className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-black/60 hover:bg-black backdrop-blur-md text-white px-6 py-4 rounded-xl border border-slate-700 hover:border-white font-tech transition-all hover:-translate-y-1 shadow-lg min-w-[80px]"
                 >
                     <Twitter size={18} className="text-[#1DA1F2]" />
-                    <span>X</span>
+                    <span className="md:hidden lg:inline">X</span>
                 </a>
             </div>
 

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Copy, Check, Twitter, BarChart3, ExternalLink, Radio } from 'lucide-react';
 import { AHAB_CA } from '../constants';
@@ -57,8 +58,9 @@ export const CommLinks: React.FC = () => {
              
              {/* DEXSCREENER */}
              <a 
-                href="#" 
-                onClick={(e) => e.preventDefault()} // Placeholder behavior
+                href="https://dexscreener.com/solana/edo9kgxuczcambfrpcpscuweu7i5jscuauxw294e8drj" 
+                target="_blank" 
+                rel="noopener noreferrer"
                 className="flex-1 lg:flex-none min-w-[160px] flex items-center justify-center gap-3 bg-[#1a1d21] hover:bg-[#202429] text-white px-6 py-4 rounded-xl border border-slate-700 hover:border-slate-500 font-tech transition-all hover:-translate-y-1 group relative overflow-hidden shadow-lg"
              >
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-5" />

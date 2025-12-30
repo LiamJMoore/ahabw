@@ -1,25 +1,35 @@
+
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { SectionId } from '../types';
 import { fetchTokenAsset, HeliusAssetResponse } from '../services/heliusService';
+import { fetchTokenMarketData } from '../services/dexScreenerService';
 import { TARGET_WHALE_CA, AHAB_CA, AHAB_PLACEHOLDER_STATS } from '../constants';
 import { Activity, Zap, Users, Crosshair } from 'lucide-react';
 
 export const TheFlippening: React.FC = () => {
   const [whaleData, setWhaleData] = useState<HeliusAssetResponse | null>(null);
+  const [ahabMcap, setAhabMcap] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
-  // Mocking Live Data for the "Chase" effect
-  // In a real scenario, you'd fetch both prices.
+  // Use live data if available, otherwise fallback (initially 0 to allow fetch)
   const targetMcap = whaleData?.result?.token_info?.price_info?.total_price || 1000000; 
-  const currentAhabMcap = AHAB_PLACEHOLDER_STATS.mcap;
+  const currentAhabMcap = ahabMcap > 0 ? ahabMcap : AHAB_PLACEHOLDER_STATS.mcap;
   
   const progress = Math.min((currentAhabMcap / targetMcap) * 100, 100);
 
   useEffect(() => {
     const loadData = async () => {
+      // 1. Fetch Target Whale Data (Helius)
       const data = await fetchTokenAsset(TARGET_WHALE_CA);
       setWhaleData(data);
+
+      // 2. Fetch Live AHAB Data (DexScreener)
+      const ahabMarket = await fetchTokenMarketData(AHAB_CA);
+      if (ahabMarket) {
+          setAhabMcap(ahabMarket.marketCap);
+      }
+
       setLoading(false);
     };
     loadData();
@@ -73,14 +83,14 @@ export const TheFlippening: React.FC = () => {
                     </div>
                     <div className="flex justify-between items-end border-b border-slate-800 pb-2">
                         <span className="text-slate-400 font-mono text-sm flex items-center gap-2"><Activity size={14}/> MCAP</span>
-                        <span className="font-tech text-xl text-white">${AHAB_PLACEHOLDER_STATS.mcap.toLocaleString()}</span>
+                        <span className="font-tech text-xl text-white">${currentAhabMcap.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between items-end border-b border-slate-800 pb-2">
                         <span className="text-slate-400 font-mono text-sm flex items-center gap-2"><Users size={14}/> HOLDERS</span>
                         <span className="font-tech text-xl text-white">{AHAB_PLACEHOLDER_STATS.holders}</span>
                     </div>
                     <div className="mt-4">
-                        <span className="text-slate-500 text-xs uppercase font-bold">Contract Address (Pending)</span>
+                        <span className="text-slate-500 text-xs uppercase font-bold">Contract Address (Live)</span>
                         <div className="bg-slate-900 p-2 rounded border border-slate-800 font-mono text-xs text-slate-400 truncate mt-1">
                             {AHAB_CA}
                         </div>

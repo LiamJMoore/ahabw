@@ -57,10 +57,6 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
   // Feature: Calculator
   const [calcAmount, setCalcAmount] = useState<string>("1000000");
 
-  // Feature: Bogdanoff Protocol
-  const [bogIncoming, setBogIncoming] = useState(false);
-  const [bogAction, setBogAction] = useState<"dump" | "pump" | null>(null);
-
   // Feature: Panic Button
   const [panicMode, setPanicMode] = useState(false);
 
@@ -471,8 +467,6 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
     else setRollMessage("Pathetic roll. Try again.");
   };
 
-  const triggerBog = () => setBogIncoming(true);
-  const answerBog = () => { setBogIncoming(false); const action = Math.random() > 0.5 ? "dump" : "pump"; setBogAction(action); setTimeout(() => setBogAction(null), 4000); };
   const handlePanic = () => { setPanicMode(true); setTimeout(() => setPanicMode(false), 2000); };
   const updateHeadline = () => {
       const headlines = [ "INSIDER SAYS: WE ARE SO BACK", "JUSTIN SUN IS WATCHING", "SEC CONFIRMS: MEMES ARE SECURITIES", "DEV SOLD? IMPOSSIBLE", "CHINESE NEW YEAR + WALL STREET BONUSES INCOMING", "DO KWON TWEETED", "VITALIK JUST BRIDGED", "GOD CANDLE LOADING... 99%" ];
@@ -487,9 +481,8 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
     // Polling
     const interval = setInterval(() => { fetchRealActivity(); updateHeadline(); }, 10000);
     const sandwichInterval = setInterval(() => { if (Math.random() > 0.8) { const victim = `So1${Math.random().toString(36).substring(2,5)}...`; setSandwichAlert(victim); setTimeout(() => setSandwichAlert(null), 5000); } }, 10000);
-    const bogInterval = setInterval(() => { if (Math.random() > 0.7) triggerBog(); }, 45000);
     
-    return () => { clearInterval(interval); clearInterval(sandwichInterval); clearInterval(bogInterval); };
+    return () => { clearInterval(interval); clearInterval(sandwichInterval); };
   }, [liveMetrics.price]); // Re-run when price updates to ensure values are calculated correctly
 
   const athPercent = liveMetrics.ath ? ((liveMetrics.price / liveMetrics.ath) * 100).toFixed(1) : "0";
@@ -501,12 +494,8 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
       <div className="absolute inset-0 pointer-events-none z-50 crt opacity-50 mix-blend-screen" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(34,197,94,0.05)_0%,rgba(0,0,0,0)_80%)] pointer-events-none z-10" />
 
-      {/* Extracted Overlays */}
+      {/* Extracted Overlays - Removed Bog Props */}
       <AnalyticsOverlays 
-        bogIncoming={bogIncoming} 
-        setBogIncoming={setBogIncoming} 
-        answerBog={answerBog} 
-        bogAction={bogAction} 
         panicMode={panicMode} 
         sandwichAlert={sandwichAlert} 
       />

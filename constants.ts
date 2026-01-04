@@ -2,34 +2,28 @@
 import { NavItem, SectionId, TokenStat } from './types';
 
 export const NAV_ITEMS: NavItem[] = [
-  { label: 'The Hunt', id: SectionId.HERO },
-  { label: 'Harpoon', id: SectionId.GAME },
-  { label: 'The Thesis', id: SectionId.LORE },
-  { label: 'Loot', id: SectionId.TOKENOMICS },
-  { label: 'Radar', id: SectionId.RADAR },
-  { label: 'The Flippening', id: SectionId.FLIPPENING },
+  { label: 'Ascension', id: SectionId.HERO },
+  { label: 'The Blueprint', id: SectionId.LORE },
+  { label: 'Treasury', id: SectionId.TOKENOMICS },
+  { label: 'Sonar', id: SectionId.RADAR },
+  { label: 'The Flipperning', id: SectionId.FLIPPENING },
+  { label: 'Defend', id: SectionId.GAME },
   { label: 'Oracle', id: SectionId.ORACLE },
 ];
 
 export const TOKEN_STATS: TokenStat[] = [
-  { label: 'Max Supply', value: '1B', description: 'One Billion Harpoons.' },
-  { label: 'Tax', value: '0/0', description: 'No tax. Only gas and glory.' },
-  { label: 'Liquidity', value: 'BURNT', description: 'The ship has no reverse gear.' },
+  { label: 'Total Supply', value: '1B', description: 'Immutable Ocean' },
+  { label: 'Authority', value: 'NULL', description: 'Power to the Pod' },
+  { label: 'Liquidity', value: 'LOCKED', description: 'Eternal Stewardship' },
 ];
 
-export const MANIFESTO_PARAGRAPHS = [
-  "Ahab is the original Degen.",
-  "We do not trade with logic.",
-  "We trade with violent intent."
-];
-
-// --- FLIPPENING CONFIG ---
+// --- CONFIG ---
 export const HELIUS_API_KEY = 'f7d6a830-5ce4-436e-bd8d-73f75b0f0c52';
-export const TARGET_WHALE_CA = 'a3W4qutoEJA4232T2gwZUfgYJTetr96pU4SJMwppump'; // $WhiteWhale
-// Official CA
-export const AHAB_CA = '6Wv4Li6toFybiJajVN3ZBTi7hF8DGbujmewqc86tpump'; 
 
-// Simulated Data for the "Live" feel until $AHAB is live
+// CAs for The Flipperning
+export const AHAB_CA = '6Wv4Li6toFybiJajVN3ZBTi7hF8DGbujmewqc86tpump'; // The Hunter
+export const WHITE_WHALE_CA = 'a3W4qutoEJA4232T2gwZUfgYJTetr96pU4SJMwppump'; // The Target
+
 export const AHAB_PLACEHOLDER_STATS = {
   price: 0.00042,
   mcap: 420000,

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SectionId } from '../types';
 import { Skull, AlertTriangle, TrendingUp, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 import { fetchTokenAsset } from '../services/heliusService';
-import { TARGET_WHALE_CA } from '../constants';
+import { WHITE_WHALE_CA } from '../constants';
 
 const LOG_ENTRIES = [
     {
@@ -34,7 +34,7 @@ export const Lore: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      const data = await fetchTokenAsset(TARGET_WHALE_CA);
+      const data = await fetchTokenAsset(WHITE_WHALE_CA);
       const mcap = data?.result?.token_info?.price_info?.total_price;
       
       if (mcap) {

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { Hero } from './components/Hero';
 import { Lore } from './components/Lore';
@@ -13,49 +13,240 @@ import { AudioAmbience } from './components/AudioAmbience';
 import { getMarketWeather, WeatherState } from './services/heliusService';
 import { AHAB_CA, NAV_ITEMS } from './constants';
 import { CommLinks } from './components/CommLinks';
-import { Menu, X, Activity, Globe, Shield, Wifi } from 'lucide-react';
+import { Menu, X, Activity, Globe, Shield, Wifi, Terminal, Crosshair, AlertTriangle, Fingerprint, Search } from 'lucide-react';
 
 // --- CINEMATIC INTRO COMPONENT ---
 const CinematicIntro = ({ onComplete }: { onComplete: () => void }) => {
+    const [stage, setStage] = useState<'BOOT' | 'SCAN' | 'TARGET' | 'BREACH'>('BOOT');
+    const [bootLines, setBootLines] = useState<string[]>([]);
+    const [progress, setProgress] = useState(0);
+
+    // Boot Text Sequence
+    useEffect(() => {
+        const lines = [
+            "INITIALIZING AHAB_OS v4.2...",
+            "CONNECTING TO SOLANA MAINNET...",
+            "BYPASSING SEC FIREWALLS...",
+            "LOADING HARPOON PROTOCOLS...",
+            "CALIBRATING SONAR ARRAY...",
+            "SYNCING WITH ORACLE..."
+        ];
+
+        let delay = 0;
+        lines.forEach((line, index) => {
+            setTimeout(() => {
+                setBootLines(prev => [...prev, line]);
+                // Trigger next stage after lines are done
+                if (index === lines.length - 1) {
+                    setTimeout(() => setStage('SCAN'), 800);
+                }
+            }, delay);
+            delay += Math.random() * 300 + 100;
+        });
+    }, []);
+
+    // Progress Bar Logic
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setProgress(prev => {
+                if (prev >= 100) {
+                    clearInterval(interval);
+                    return 100;
+                }
+                // Random jumps in progress
+                return prev + Math.floor(Math.random() * 5);
+            });
+        }, 100);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Stage Transitions
+    useEffect(() => {
+        if (stage === 'SCAN') {
+            setTimeout(() => setStage('TARGET'), 2500);
+        }
+        if (stage === 'TARGET') {
+            setTimeout(() => setStage('BREACH'), 1500);
+        }
+        if (stage === 'BREACH') {
+            setTimeout(onComplete, 2500);
+        }
+    }, [stage, onComplete]);
+
     return (
         <motion.div 
+            className="fixed inset-0 z-[99999] bg-black flex items-center justify-center overflow-hidden font-mono cursor-wait"
             initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1 }}
-            className="fixed inset-0 z-[99999] bg-[#020617] flex items-center justify-center overflow-hidden"
+            exit={{ opacity: 0, scale: 1.1, filter: "blur(20px)" }}
+            transition={{ duration: 0.8 }}
         >
-            <div className="absolute inset-0 bg-radial-gradient(circle_at_center,rgba(6,182,212,0.1)_0%,rgba(0,0,0,0)_60%)" />
-            <div className="text-center relative z-10">
-                <motion.div
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.5 }}
-                >
-                    <h1 className="font-meme text-6xl md:text-8xl text-white mb-4 liquid-text drop-shadow-[0_0_25px_rgba(6,182,212,0.6)]">
-                        $AHAB
-                    </h1>
-                </motion.div>
-                <motion.div 
-                    initial={{ width: 0 }} 
-                    animate={{ width: "200px" }} 
-                    transition={{ duration: 1.5, ease: "easeInOut" }}
-                    className="h-1 bg-cyan-500 mx-auto mb-4 shadow-[0_0_10px_rgba(34,211,238,0.8)]"
-                />
-                <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5 }}
-                    className="font-tech text-cyan-400 tracking-[0.5em] text-xs"
-                >
-                    INITIALIZING SEQUENCE...
-                </motion.p>
+            {/* CRT Scanlines Overlay */}
+            <div className="absolute inset-0 pointer-events-none opacity-20 z-50 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[size:100%_2px,3px_100%]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_50%,rgba(0,0,0,0.8)_100%)] z-40" />
+
+            {/* STAGE 1: BOOT TERMINAL */}
+            <AnimatePresence>
+                {stage === 'BOOT' && (
+                    <div className="w-full max-w-2xl px-6 relative z-30">
+                        <motion.div 
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            exit={{ opacity: 0, y: -50 }}
+                            className="font-tech text-cyan-500 text-sm md:text-base space-y-1 h-64 overflow-hidden border-l-2 border-cyan-800 pl-4"
+                        >
+                            {bootLines.map((line, i) => (
+                                <motion.div 
+                                    key={i}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="flex items-center gap-2"
+                                >
+                                    <span className="text-cyan-800">{`>`}</span> {line}
+                                    {i === bootLines.length - 1 && <span className="w-2 h-4 bg-cyan-500 animate-pulse inline-block"/>}
+                                </motion.div>
+                            ))}
+                        </motion.div>
+                        
+                        <div className="mt-8">
+                            <div className="flex justify-between text-xs text-cyan-600 mb-1 font-tech tracking-widest">
+                                <span>SYSTEM INTEGRITY</span>
+                                <span>{Math.min(progress, 100)}%</span>
+                            </div>
+                            <div className="h-1 w-full bg-cyan-950">
+                                <motion.div 
+                                    className="h-full bg-cyan-500 shadow-[0_0_10px_#22d3ee]"
+                                    style={{ width: `${progress}%` }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* STAGE 2: SONAR SCANNER */}
+            <AnimatePresence>
+                {stage === 'SCAN' && (
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 1.5 }}
+                        className="relative flex flex-col items-center justify-center z-30"
+                    >
+                        {/* Radar Circle */}
+                        <div className="relative w-64 h-64 md:w-96 md:h-96 rounded-full border border-cyan-800 bg-cyan-950/10 flex items-center justify-center shadow-[0_0_50px_rgba(6,182,212,0.2)]">
+                            {/* Grid */}
+                            <div className="absolute inset-0 rounded-full border border-cyan-900/50 scale-50" />
+                            <div className="absolute inset-0 rounded-full border border-cyan-900/50 scale-75" />
+                            <div className="absolute w-full h-[1px] bg-cyan-900/50" />
+                            <div className="absolute h-full w-[1px] bg-cyan-900/50" />
+                            
+                            {/* Sweep */}
+                            <div className="absolute inset-0 rounded-full animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,rgba(34,211,238,0.3)_360deg)]" />
+                            
+                            {/* Blip */}
+                            <motion.div 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: [0, 1, 0] }}
+                                transition={{ repeat: Infinity, duration: 2, delay: 1 }}
+                                className="absolute top-1/3 right-1/3 w-3 h-3 bg-red-500 rounded-full shadow-[0_0_15px_red]" 
+                            />
+                             <motion.div 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: [0, 1, 0] }}
+                                transition={{ repeat: Infinity, duration: 2, delay: 1.2 }}
+                                className="absolute top-1/3 right-1/3 text-red-500 font-tech text-[10px] ml-4 mt-[-4px]" 
+                            >
+                                UNKNOWN SIGNAL
+                            </motion.div>
+                        </div>
+                        
+                        <div className="mt-8 font-tech text-cyan-400 tracking-[0.5em] animate-pulse">
+                            SEARCHING SECTOR 7G...
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* STAGE 3: TARGET ACQUIRED (RED ALERT) */}
+            <AnimatePresence>
+                {stage === 'TARGET' && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="relative z-30 text-center"
+                    >
+                        <div className="absolute inset-0 bg-red-900/20 animate-pulse z-0" />
+                        <motion.div 
+                            animate={{ scale: [1, 1.1, 1] }}
+                            transition={{ repeat: Infinity, duration: 0.2 }}
+                            className="relative z-10"
+                        >
+                            <AlertTriangle size={80} className="text-red-500 mx-auto mb-4" />
+                            <h2 className="font-meme text-6xl md:text-8xl text-red-600 tracking-widest border-y-4 border-red-600 py-2 mb-4 bg-black">
+                                TARGET LOCKED
+                            </h2>
+                            <p className="font-tech text-red-400 tracking-[0.5em] text-lg">
+                                MASSIVE SIGNATURE DETECTED
+                            </p>
+                        </motion.div>
+                        
+                        {/* Decoding Hash */}
+                        <div className="mt-8 font-mono text-xs text-red-800 break-all max-w-lg mx-auto opacity-70">
+                            {Array.from({length: 4}).map((_,i) => (
+                                <div key={i}>{Array.from({length: 60}).map(() => Math.random() > 0.5 ? '1' : '0').join('')}</div>
+                            ))}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+             {/* STAGE 4: BREACH (THE REVEAL) */}
+             <AnimatePresence>
+                {stage === 'BREACH' && (
+                    <div className="relative z-40 text-center">
+                        <motion.div
+                            initial={{ scale: 0.5, opacity: 0, y: 100 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            transition={{ type: "spring", stiffness: 200, damping: 10 }}
+                        >
+                            <h1 className="font-meme text-8xl md:text-[12rem] text-transparent bg-clip-text bg-gradient-to-t from-cyan-100 to-white drop-shadow-[0_0_50px_rgba(6,182,212,0.8)] leading-[0.8] mb-4">
+                                $AHAB
+                            </h1>
+                        </motion.div>
+                        
+                        <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: "100%" }}
+                            transition={{ duration: 0.5, delay: 0.3 }}
+                            className="h-[2px] bg-cyan-400 mx-auto mb-6 shadow-[0_0_20px_#22d3ee]"
+                        />
+
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.6 }}
+                            className="flex items-center justify-center gap-4 text-cyan-300 font-tech tracking-[0.3em] text-sm md:text-xl"
+                        >
+                            <Terminal size={16} />
+                            <span>THE WHALE MUST DIE</span>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Corner Details */}
+            <div className="absolute bottom-6 left-6 font-tech text-[10px] text-cyan-900 z-50">
+                <div className="flex items-center gap-2">
+                    <Activity size={12} className="animate-pulse"/> MEMORY: 64TB / 64TB
+                </div>
             </div>
-            <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                onAnimationComplete={() => setTimeout(onComplete, 2500)}
-                className="hidden"
-            />
+            <div className="absolute bottom-6 right-6 font-tech text-[10px] text-cyan-900 z-50 text-right">
+                <div className="flex items-center gap-2 justify-end">
+                    SECURE_CONNECTION <Shield size={12} />
+                </div>
+                <div>ENCRYPTION: 256-BIT</div>
+            </div>
         </motion.div>
     );
 };
@@ -230,7 +421,7 @@ const App: React.FC = () => {
 
   return (
     <>
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
             {loading && <CinematicIntro onComplete={() => setLoading(false)} />}
         </AnimatePresence>
 
@@ -298,3 +489,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+

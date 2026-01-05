@@ -210,7 +210,7 @@ const CinematicIntro = ({ onComplete }: { onComplete: () => void }) => {
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             transition={{ type: "spring", stiffness: 200, damping: 10 }}
                         >
-                            <h1 className="font-meme text-8xl md:text-[12rem] text-transparent bg-clip-text bg-gradient-to-t from-cyan-100 to-white drop-shadow-[0_0_50px_rgba(6,182,212,0.8)] leading-[0.8] mb-4">
+                            <h1 className="font-meme text-8xl md:text-[12rem] text-transparent bg-clip-text bg-gradient-to-t from-cyan-100 to-white drop-shadow-[0_0_50px_rgba(6,182,212,0.8)] leading-[0.8] mb-4 px-8 py-4">
                                 $AHAB
                             </h1>
                         </motion.div>
@@ -489,4 +489,5 @@ const App: React.FC = () => {
 };
 
 export default App;
+
 

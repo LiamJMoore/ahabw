@@ -5,6 +5,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Ascension', id: SectionId.HERO },
   { label: 'The Blueprint', id: SectionId.LORE },
   { label: 'Treasury', id: SectionId.TOKENOMICS },
+  { label: 'Propaganda', id: SectionId.MEMES },
   { label: 'Sonar', id: SectionId.RADAR },
   { label: 'The Flipperning', id: SectionId.FLIPPENING },
   { label: 'Defend', id: SectionId.GAME },

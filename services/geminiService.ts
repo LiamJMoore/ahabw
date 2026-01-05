@@ -1,11 +1,15 @@
 import { GoogleGenAI } from "@google/genai";
 
-const apiKey = process.env.API_KEY || '';
-const ai = new GoogleGenAI({ apiKey });
+// Safely access process.env.API_KEY or default to empty string to prevent browser crash
+const apiKey = (typeof process !== 'undefined' && process.env && process.env.API_KEY) ? process.env.API_KEY : '';
+
+// Only initialize AI if key exists to prevent errors
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 export const generateAhabWisdom = async (userQuery: string): Promise<string> => {
-  if (!apiKey) {
-    return "ARRR! Where be my API KEY?! (Check env vars)";
+  if (!ai) {
+    console.warn("Gemini API Key missing.");
+    return "ARRR! THE ORACLE IS SILENT (Missing API Key)";
   }
 
   try {
@@ -28,7 +32,7 @@ export const generateAhabWisdom = async (userQuery: string): Promise<string> => 
 };
 
 export const generateAhabSpeech = async (text: string): Promise<string | null> => {
-    if (!apiKey) return null;
+    if (!ai) return null;
 
     try {
         const response = await ai.models.generateContent({

@@ -9,6 +9,7 @@ import { WhaleOracle } from './components/WhaleOracle';
 import { WhaleRPG } from './components/WhaleRPG';
 import { TheFlippening } from './components/TheFlippening';
 import { TokenAnalytics } from './components/TokenAnalytics';
+import { MemeGallery } from './components/MemeGallery';
 import { getMarketWeather, WeatherState } from './services/heliusService';
 import { AHAB_CA } from './constants';
 import { CommLinks } from './components/CommLinks';
@@ -89,6 +90,8 @@ const App: React.FC = () => {
                     </div>
                     <TokenAnalytics ca={AHAB_CA} />
                 </div>
+                
+                <MemeGallery />
 
                 <WhaleRPG />
 

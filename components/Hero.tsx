@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { WeatherState } from '../services/heliusService';
 import { AHAB_CA } from '../constants';
-import { Copy, Check, Rocket, Anchor, Ship } from 'lucide-react';
+import { Copy, Check, Rocket, Anchor, Ship, Crosshair, Map, Zap } from 'lucide-react';
 
 interface HeroProps {
     weather: WeatherState;
@@ -15,16 +15,14 @@ export const Hero: React.FC<HeroProps> = ({ weather }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Parallax Transforms
-  const yBack = useTransform(scrollY, [0, 1000], [0, 500]); // Background moves slow
-  const yText = useTransform(scrollY, [0, 500], [0, 200]);  // Text moves medium
-  const yFore = useTransform(scrollY, [0, 1000], [0, -200]); // Foreground moves up (depth)
+  const yBack = useTransform(scrollY, [0, 1000], [0, 500]);
+  const yText = useTransform(scrollY, [0, 500], [0, 200]);
+  const yFore = useTransform(scrollY, [0, 1000], [0, -200]);
   
   const opacityText = useTransform(scrollY, [0, 400], [1, 0]);
-  const blurText = useTransform(scrollY, [0, 300], ["0px", "20px"]);
 
   const [copied, setCopied] = useState(false);
 
-  // Mouse Spotlight Effect
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
         setMousePos({ 
@@ -43,9 +41,9 @@ export const Hero: React.FC<HeroProps> = ({ weather }) => {
   };
 
   return (
-    <div ref={containerRef} id="hero" className="relative h-[130vh] w-full overflow-hidden flex items-center justify-center bg-[#020617]">
+    <div ref={containerRef} id="hero" className="relative h-screen w-full overflow-hidden flex items-center justify-center bg-[#020617] pt-20">
       
-      {/* 1. DYNAMIC LIGHTING / SPOTLIGHT (Cyan Tint) */}
+      {/* 1. DYNAMIC LIGHTING */}
       <div 
         className="absolute inset-0 pointer-events-none z-10 transition-opacity duration-1000 mix-blend-screen"
         style={{
@@ -53,15 +51,10 @@ export const Hero: React.FC<HeroProps> = ({ weather }) => {
         }}
       />
 
-      {/* 2. DEEP OCEAN LAYERS (Parallax) - PRESERVING BLUE */}
+      {/* 2. BACKGROUND LAYERS */}
       <motion.div style={{ y: yBack }} className="absolute inset-0 z-0">
-          {/* Base Layer: Rich Deep Blue Gradient */}
           <div className="absolute inset-0 bg-gradient-to-b from-[#0f172a] via-[#020617] to-black" />
-          
-          {/* Caustics (Light rays) */}
           <div className="absolute inset-0 opacity-30 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] animate-pulse mix-blend-overlay" />
-          
-          {/* Moving Fog (Cyan tinted) */}
           <div className="absolute inset-0 opacity-20 mix-blend-screen" 
              style={{ 
                  backgroundImage: 'url("https://www.transparenttextures.com/patterns/foggy-birds.png")',
@@ -70,107 +63,115 @@ export const Hero: React.FC<HeroProps> = ({ weather }) => {
           />
       </motion.div>
 
-      {/* 3. HERO CONTENT */}
+      {/* 3. HERO CONTENT WRAPPER - HUD STYLE */}
       <motion.div 
-        style={{ y: yText, opacity: opacityText, filter: `blur(${blurText})` }}
-        // Added negative margin top to pull content upwards
-        className="relative z-20 text-center px-4 flex flex-col items-center w-full max-w-6xl -mt-24 md:-mt-32"
+        style={{ y: yText, opacity: opacityText }}
+        className="relative z-20 w-full max-w-7xl mx-auto px-4 flex flex-col items-center -mt-32 md:-mt-40"
       >
-        {/* Cinematic Status Line */}
-        <div className="flex items-center gap-4 mb-6">
-            <div className="h-[1px] w-12 bg-gradient-to-r from-transparent to-cyan-400" />
-            <div className="font-tech text-xs tracking-[0.5em] text-cyan-300 uppercase animate-pulse drop-shadow-[0_0_5px_rgba(34,211,238,0.8)]">
-                TARGET: {weather === 'STORM' ? 'RED_CANDLE_STORM' : 'CLEAR_WATERS'}
-            </div>
-            <div className="h-[1px] w-12 bg-gradient-to-l from-transparent to-cyan-400" />
-        </div>
-
-        {/* LIQUID TITLE */}
-        {/* Tightened margin bottom */}
-        <div className="relative mb-2">
-            <h1 className="font-meme text-[8rem] sm:text-[10rem] md:text-[14rem] leading-[0.8] text-transparent bg-clip-text bg-gradient-to-t from-cyan-100 via-white to-cyan-50 drop-shadow-[0_0_50px_rgba(6,182,212,0.4)] liquid-text p-4 pr-12">
-              $AHAB
-            </h1>
-            {/* Outline duplicate for depth */}
-            <h1 className="absolute inset-0 font-meme text-[8rem] sm:text-[10rem] md:text-[14rem] leading-[0.8] text-transparent stroke-cyan-200 stroke-2 opacity-30 pointer-events-none p-4 pr-12" style={{ WebkitTextStroke: '2px rgba(34,211,238,0.3)' }}>
-              $AHAB
-            </h1>
-        </div>
         
-        {/* Tightened margin bottom */}
-        <h2 className="font-display text-xl md:text-3xl tracking-[0.3em] uppercase text-cyan-200/90 mb-6 border-y border-cyan-500/30 py-4 shadow-[0_0_20px_rgba(6,182,212,0.1)]">
-            The Whale Must Die
-        </h2>
-
-        {/* Tightened margin bottom */}
-        <p className="max-w-xl mx-auto font-special text-cyan-100/80 text-lg leading-relaxed text-shadow-sm mb-10">
-            "I see in him outrageous strength, with an inscrutable malice sinewing it. That is what I hate."
-        </p>
-
-        {/* ACTION MODULE */}
-        <div className="flex flex-col md:flex-row items-end gap-6 w-full max-w-2xl justify-center">
+        {/* HUD FRAME */}
+        <div className="absolute inset-0 pointer-events-none border-x border-cyan-900/20 max-w-5xl mx-auto hidden lg:block">
+            <div className="absolute top-0 left-0 w-2 h-20 bg-cyan-500/50" />
+            <div className="absolute top-0 right-0 w-2 h-20 bg-cyan-500/50" />
+            <div className="absolute bottom-0 left-0 w-2 h-20 bg-cyan-500/50" />
+            <div className="absolute bottom-0 right-0 w-2 h-20 bg-cyan-500/50" />
             
-            {/* CA Card */}
-            <button 
-                onClick={handleCopy}
-                className="w-full md:w-1/2 bg-[#020617]/60 backdrop-blur-md border border-cyan-800 hover:border-cyan-400 transition-all duration-300 rounded-xl p-1 group relative overflow-hidden h-16 self-center"
-            >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                
-                <div className="flex items-center justify-between bg-[#0f172a]/50 rounded-lg p-3 h-full">
-                    <div className="flex flex-col items-start">
-                        <span className="text-[9px] font-tech text-cyan-300 uppercase tracking-wider">CONTRACT ADDRESS</span>
-                        <code className="font-mono text-cyan-100 text-xs sm:text-sm drop-shadow-md">{AHAB_CA.slice(0, 6)}...{AHAB_CA.slice(-6)}</code>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs font-bold text-cyan-950 bg-cyan-400/80 px-3 py-2 rounded uppercase shadow-[0_0_10px_rgba(34,211,238,0.5)]">
-                        {copied ? 'COPIED' : 'COPY'} {copied ? <Check size={14}/> : <Copy size={14}/>}
+            <div className="absolute top-1/3 left-0 w-full h-[1px] border-t border-dashed border-cyan-900/30" />
+            <div className="absolute bottom-1/3 left-0 w-full h-[1px] border-t border-dashed border-cyan-900/30" />
+        </div>
+
+        {/* TOP STATUS PILL */}
+        <div className="bg-cyan-950/40 backdrop-blur-md border border-cyan-500/30 rounded-full px-6 py-2 mb-6 flex items-center gap-4 shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+            <div className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${weather === 'STORM' ? 'bg-red-500 animate-ping' : 'bg-green-500 animate-pulse'}`} />
+                <span className="font-tech text-xs text-cyan-300 tracking-[0.2em] uppercase">
+                    SECTOR CONDITION: {weather}
+                </span>
+            </div>
+            <div className="w-[1px] h-4 bg-cyan-800" />
+            <div className="flex items-center gap-2 font-mono text-xs text-cyan-500">
+                <Crosshair size={12} /> TARGET LOCKED
+            </div>
+        </div>
+
+        {/* TITLE SECTION */}
+        <div className="relative text-center mb-6">
+            <h1 className="font-meme text-[8rem] sm:text-[11rem] md:text-[15rem] leading-[0.75] text-transparent bg-clip-text bg-gradient-to-t from-cyan-100 via-white to-cyan-50 drop-shadow-[0_0_30px_rgba(6,182,212,0.3)] liquid-text py-4 px-12 select-none">
+              $AHAB
+            </h1>
+            <h1 className="absolute inset-0 font-meme text-[8rem] sm:text-[11rem] md:text-[15rem] leading-[0.75] text-transparent stroke-cyan-500 stroke-1 opacity-20 pointer-events-none blur-sm py-4 px-12" style={{ WebkitTextStroke: '2px rgba(34,211,238,0.2)' }}>
+              $AHAB
+            </h1>
+        </div>
+
+        <div className="text-center max-w-2xl mx-auto mb-12">
+            <h2 className="font-display text-2xl md:text-3xl tracking-[0.4em] uppercase text-cyan-100/90 mb-4 border-b border-cyan-500/20 pb-4 inline-block">
+                The Whale Must Die
+            </h2>
+            <p className="font-special text-cyan-200/60 text-lg">
+                "To the last I grapple with thee; from hell's heart I stab at thee."
+            </p>
+        </div>
+
+        {/* COMMAND DECK (Unified Action Area) */}
+        <div className="w-full max-w-3xl bg-[#08101e]/80 backdrop-blur-xl border border-cyan-800 rounded-2xl p-3 flex flex-col gap-3 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
+            
+            {/* Ambient Scanline for Console */}
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(6,182,212,0.05),transparent)] animate-scan-fast pointer-events-none" />
+
+            {/* CA DISPLAY (Top - Full Width) */}
+            <div className="w-full bg-[#020617] rounded-xl border border-cyan-900/50 p-4 flex flex-col items-center justify-center relative overflow-hidden group/copy cursor-pointer transition-all hover:border-cyan-500/30 hover:bg-cyan-950/20" onClick={handleCopy}>
+                <div className="flex items-center justify-between w-full mb-2">
+                     <div className="flex items-center gap-2">
+                        <Map size={12} className="text-cyan-600" />
+                        <span className="text-[10px] font-tech text-cyan-600 tracking-widest uppercase">Target Coordinates</span>
+                     </div>
+                     <span className="text-[10px] font-tech text-cyan-800 tracking-widest uppercase">{copied ? 'COPIED' : 'CLICK_TO_COPY'}</span>
+                </div>
+
+                <div className="flex items-center gap-3 w-full">
+                    <code className="font-mono text-cyan-200 text-xs sm:text-sm md:text-lg tracking-wide break-all text-center flex-1 transition-colors group-hover/copy:text-white group-hover/copy:drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]">
+                        {AHAB_CA}
+                    </code>
+                    <div className="bg-cyan-900/30 p-2 rounded-lg border border-cyan-800/50 text-cyan-500 group-hover/copy:text-white group-hover/copy:bg-cyan-500 group-hover/copy:border-cyan-400 transition-all shrink-0">
+                        {copied ? <Check size={16} /> : <Copy size={16} />}
                     </div>
                 </div>
-            </button>
+                
+                {/* Tech Deco */}
+                <div className="absolute bottom-0 left-0 h-[2px] bg-cyan-500/50 w-0 group-hover/copy:w-full transition-all duration-500" />
+            </div>
 
-            {/* Main CTA - Ship Themed */}
+            {/* ACTION BUTTON (Bottom - Full Width) */}
             <a 
                 href="https://pump.fun/coin/6Wv4Li6toFybiJajVN3ZBTi7hF8DGbujmewqc86tpump"
                 target="_blank"
                 rel="noreferrer"
-                className="group relative inline-block cursor-pointer w-full md:w-auto text-center"
+                className="w-full relative group/btn overflow-hidden rounded-xl bg-gradient-to-r from-red-700 to-red-900 flex items-center justify-between px-6 py-5 border border-red-500/50 hover:border-red-400 transition-all shadow-[0_0_20px_rgba(220,38,38,0.2)] hover:shadow-[0_0_40px_rgba(220,38,38,0.4)]"
             >
-                <div className="absolute -inset-2 bg-red-600/30 blur-xl rounded-full opacity-50 group-hover:opacity-80 transition-opacity duration-500 animate-pulse" />
-                
-                <div className="relative flex flex-col items-center">
-                    
-                    {/* Mast/Sail Visual (Decorative) */}
-                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-[2px] h-8 bg-red-400/50 z-0"></div>
-                    <div className="absolute -top-8 left-1/2 w-0 h-0 border-l-[0px] border-r-[20px] border-b-[30px] border-l-transparent border-r-transparent border-b-red-600/80 skew-x-[-10deg] origin-bottom transition-transform group-hover:skew-x-[0deg]"></div>
-
-                    {/* The Button Body (Hull) */}
-                    <div className="relative bg-gradient-to-b from-red-700 via-red-800 to-red-950 px-10 py-4 rounded-b-[3rem] rounded-t-lg border-t-2 border-red-500 shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:scale-105 active:scale-95 transition-all duration-300 z-10 min-w-[220px]">
-                        <div className="flex items-center justify-center gap-2 mb-1">
-                            <Ship className="text-white group-hover:animate-bounce" size={24} />
-                            <span className="font-meme text-3xl text-white tracking-widest drop-shadow-[0_2px_0_rgba(0,0,0,1)]">BOARD</span>
-                        </div>
-                        <div className="h-[1px] w-full bg-red-900/50 my-1" />
-                        <span className="font-tech text-[10px] text-red-200 tracking-[0.3em] uppercase block">LAUNCH VOYAGE</span>
-                    </div>
-
-                    {/* Water Splash */}
-                    <div className="absolute -bottom-2 w-full h-4 bg-cyan-400/20 blur-md rounded-[100%] group-hover:w-[120%] transition-all" />
+                <div className="relative z-10 flex flex-col">
+                    <span className="font-meme text-3xl text-white tracking-widest leading-none drop-shadow-md">BOARD THE SHIP</span>
+                    <span className="font-tech text-[10px] text-red-200 tracking-[0.3em] uppercase group-hover/btn:text-white transition-colors">Launch Sequence Ready</span>
                 </div>
+                
+                {/* Animated Ship Icon */}
+                <div className="relative z-10 bg-red-950/50 p-3 rounded-lg border border-red-500/30 group-hover/btn:scale-110 transition-transform duration-300">
+                    <Ship className="text-white w-8 h-8 group-hover/btn:animate-pulse" />
+                </div>
+
+                {/* Hover Slide Effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-red-800 translate-x-[-100%] group-hover/btn:translate-x-0 transition-transform duration-300 z-0" />
+                
+                {/* Particle/Speed Lines */}
+                <div className="absolute inset-0 opacity-0 group-hover/btn:opacity-30 transition-opacity z-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] animate-pulse" />
             </a>
         </div>
 
       </motion.div>
 
-      {/* 4. FOREGROUND PARALLAX ELEMENTS */}
-      <motion.div style={{ y: yFore }} className="absolute inset-0 pointer-events-none z-30">
-          {/* Left Chains */}
-          <img src="https://www.transparenttextures.com/patterns/dark-matter.png" className="absolute -left-20 top-[40%] w-64 h-full opacity-30 mix-blend-multiply" />
-          
-          {/* Scroll Indicator */}
-          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce opacity-80">
-            <span className="font-tech text-[10px] tracking-[0.3em] text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.8)]">DIVE DEEPER</span>
-            <Anchor size={24} className="text-cyan-400" />
-          </div>
+      {/* 4. FOREGROUND ELEMENT (Depth) */}
+      <motion.div style={{ y: yFore }} className="absolute bottom-0 w-full pointer-events-none z-30 flex justify-center opacity-80">
+          <div className="w-[1px] h-32 bg-gradient-to-t from-cyan-500/50 to-transparent" />
       </motion.div>
 
       <style>{`

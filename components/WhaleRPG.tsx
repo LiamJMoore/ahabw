@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Sword, Shield, Activity, Flame, Skull } from 'lucide-react';
+import { Heart, Sword, Activity, Flame, Skull } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface FloatingText {
@@ -18,7 +19,7 @@ export const WhaleRPG: React.FC = () => {
     const [turn, setTurn] = useState<'player' | 'whale'>('player');
     const [shake, setShake] = useState(0);
     const [floaters, setFloaters] = useState<FloatingText[]>([]);
-    const [ultCharge, setUltCharge] = useState(0); // 0 to 100
+    const [ultCharge, setUltCharge] = useState(0);
 
     const addLog = (msg: string) => setLog(prev => [msg, ...prev].slice(0, 3));
 
@@ -39,7 +40,7 @@ export const WhaleRPG: React.FC = () => {
         if (action === 'attack') {
             dmg = Math.floor(Math.random() * 50) + 30;
             addLog(`Harpoon Strike!`);
-            spawnFloater(`-${dmg}`, 70, 40, 'text-red-500');
+            spawnFloater(`-${dmg}`, 70, 40, 'text-red-400');
             setUltCharge(prev => Math.min(prev + 15, 100));
 
         } else if (action === 'leverage') {
@@ -47,26 +48,26 @@ export const WhaleRPG: React.FC = () => {
             if (Math.random() > 0.4) {
                 dmg = Math.floor(Math.random() * 300) + 100;
                 addLog(`CRITICAL 100x LONG!`);
-                spawnFloater(`CRIT -${dmg}`, 70, 30, 'text-yellow-400');
+                spawnFloater(`CRIT -${dmg}`, 70, 30, 'text-yellow-300');
                 setShake(20);
                 setUltCharge(prev => Math.min(prev + 25, 100));
             } else {
                 selfDmg = 40;
                 addLog(`LIQUIDATED! Wicks hurt.`);
-                spawnFloater(`-${selfDmg}`, 20, 60, 'text-red-600');
+                spawnFloater(`-${selfDmg}`, 20, 60, 'text-red-500');
                 setShake(10);
             }
 
         } else if (action === 'heal') {
             heal = 50;
             addLog(`Grog consumed. +${heal} HP`);
-            spawnFloater(`+${heal}`, 20, 50, 'text-green-500');
+            spawnFloater(`+${heal}`, 20, 50, 'text-green-400');
             setUltCharge(prev => Math.min(prev + 10, 100));
         
         } else if (action === 'ult') {
             dmg = 800;
             addLog(`CALL THE PEQUOD! ALL HANDS!`);
-            spawnFloater(`-${dmg}!!!`, 70, 50, 'text-cyan-400 text-4xl font-black');
+            spawnFloater(`-${dmg}!!!`, 70, 50, 'text-cyan-300 text-4xl font-black');
             setShake(40);
             setUltCharge(0);
             confetti({ colors: ['#22d3ee', '#ffffff'] });
@@ -124,46 +125,45 @@ export const WhaleRPG: React.FC = () => {
     }, [shake]);
 
     return (
-        <section className="py-24 bg-slate-950 flex justify-center px-4">
-            <div className="max-w-4xl w-full bg-slate-900 border-4 border-slate-700 rounded-xl overflow-hidden shadow-2xl relative">
+        <section className="py-24 bg-[#020617] flex justify-center px-4 relative">
+             <div className="absolute inset-0 bg-gradient-to-t from-[#020617] to-[#0c4a6e]" />
+
+            <div className="max-w-4xl w-full bg-[#082f49]/30 border-2 border-cyan-800 rounded-xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.6)] relative z-10 backdrop-blur-sm">
                 
                 {/* Battle Stage */}
                 <motion.div 
                     animate={{ x: [0, -shake, shake, -shake, shake, 0] }}
-                    className="relative h-80 bg-gradient-to-b from-[#1e1b4b] to-black p-8 flex justify-between items-end overflow-hidden"
+                    className="relative h-96 bg-[#020617] p-8 flex justify-between items-end overflow-hidden"
                 >
-                    {/* Retro Grid Floor */}
-                    <div className="absolute inset-0 opacity-30 pointer-events-none" style={{ 
-                        backgroundImage: 'linear-gradient(#6366f1 1px, transparent 1px), linear-gradient(90deg, #6366f1 1px, transparent 1px)', 
-                        backgroundSize: '40px 40px', 
-                        transform: 'perspective(300px) rotateX(40deg) translateY(100px)' 
-                    }} />
+                    {/* Water Effect */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-cyan-900/20 to-[#020617] z-0" />
+                    <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/underwater.png')] animate-pulse" />
 
                     {/* PLAYER SIDE */}
                     <div className="relative z-10 flex flex-col items-center w-1/3">
                          {/* HP BAR */}
-                         <div className="w-full bg-slate-800 h-4 rounded border border-slate-600 mb-2 overflow-hidden">
-                             <div className="h-full bg-green-500 transition-all duration-300" style={{ width: `${playerHp}%` }} />
+                         <div className="w-full bg-slate-900 h-2 rounded border border-slate-700 mb-2 overflow-hidden">
+                             <div className="h-full bg-cyan-400 transition-all duration-300 shadow-[0_0_10px_#22d3ee]" style={{ width: `${playerHp}%` }} />
                          </div>
-                         <div className={`text-7xl filter drop-shadow-lg transition-transform ${playerHp <= 0 ? 'rotate-90 opacity-50 grayscale' : ''}`}>
+                         <div className={`text-8xl filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] transition-transform ${playerHp <= 0 ? 'rotate-90 opacity-50 grayscale' : ''}`}>
                             ⛵️
                          </div>
-                         <div className="mt-2 font-meme text-white tracking-widest text-lg">THE PEQUOD</div>
+                         <div className="mt-4 font-tech text-cyan-200 tracking-widest text-sm bg-black/40 px-3 py-1 rounded border border-cyan-900">THE PEQUOD</div>
                     </div>
 
                     {/* BOSS SIDE */}
                     <div className="relative z-10 flex flex-col items-center w-1/3">
-                         <div className="w-full bg-slate-800 h-4 rounded border border-slate-600 mb-2 overflow-hidden">
-                             <div className="h-full bg-red-600 transition-all duration-300" style={{ width: `${(whaleHp/2000)*100}%` }} />
+                         <div className="w-full bg-slate-900 h-2 rounded border border-slate-700 mb-2 overflow-hidden">
+                             <div className="h-full bg-red-500 transition-all duration-300 shadow-[0_0_10px_red]" style={{ width: `${(whaleHp/2000)*100}%` }} />
                          </div>
                          <motion.div 
                             animate={{ y: [0, -10, 0] }}
                             transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-                            className={`text-9xl filter drop-shadow-[0_0_30px_rgba(255,255,255,0.3)] ${whaleHp <= 0 ? 'opacity-0 scale-0' : ''}`}
+                            className={`text-[8rem] filter drop-shadow-[0_0_30px_rgba(255,255,255,0.2)] ${whaleHp <= 0 ? 'opacity-0 scale-0' : ''}`}
                          >
                             🐋
                          </motion.div>
-                         <div className="mt-2 font-meme text-red-500 tracking-widest text-lg">MOBY DICK</div>
+                         <div className="mt-4 font-tech text-red-400 tracking-widest text-sm bg-black/40 px-3 py-1 rounded border border-red-900">MOBY DICK</div>
                     </div>
 
                     {/* Floating Damage Text Overlay */}
@@ -184,23 +184,23 @@ export const WhaleRPG: React.FC = () => {
                 </motion.div>
 
                 {/* UI Panel */}
-                <div className="bg-[#0f172a] p-6 border-t-4 border-slate-700 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-[#050b14] p-6 border-t border-cyan-900 grid grid-cols-1 md:grid-cols-2 gap-6">
                     
                     {/* Action Log */}
-                    <div className="bg-black/50 p-4 rounded border border-slate-800 font-mono text-sm h-40 overflow-hidden flex flex-col justify-end shadow-inner">
+                    <div className="bg-cyan-950/10 p-4 rounded border border-cyan-900/50 font-mono text-sm h-40 overflow-hidden flex flex-col justify-end shadow-inner">
                         {log.map((l, i) => (
-                            <div key={i} className={`mb-1 border-l-2 pl-2 ${i===0 ? 'border-cyan-500 text-cyan-400 font-bold' : 'border-slate-700 text-slate-500'}`}>
+                            <div key={i} className={`mb-1 border-l-2 pl-2 ${i===0 ? 'border-cyan-400 text-cyan-300 font-bold' : 'border-slate-800 text-slate-600'}`}>
                                 {l}
                             </div>
                         ))}
                     </div>
 
                     {/* Controls */}
-                    <div className="grid grid-cols-2 gap-3 relative">
+                    <div className="grid grid-cols-2 gap-3 relative content-center">
                         {playerHp <= 0 ? (
                             <button 
                                 onClick={() => { setPlayerHp(100); setWhaleHp(2000); setLog(["NEW GAME STARTED"]); setTurn('player'); setUltCharge(0); }}
-                                className="col-span-2 bg-slate-700 hover:bg-slate-600 text-white font-meme text-2xl rounded flex items-center justify-center gap-2"
+                                className="col-span-2 bg-red-900/30 hover:bg-red-900/50 border border-red-800 text-red-400 font-meme text-2xl rounded flex items-center justify-center gap-2 py-4"
                             >
                                 <Skull /> RESPAWN
                             </button>
@@ -209,21 +209,21 @@ export const WhaleRPG: React.FC = () => {
                                 <button 
                                     onClick={() => playerAction('attack')}
                                     disabled={turn !== 'player'}
-                                    className="bg-slate-800 hover:bg-slate-700 text-white font-tech border-b-4 border-slate-950 hover:border-cyan-500 rounded flex items-center justify-center gap-2 disabled:opacity-50 active:border-b-0 active:translate-y-1 transition-all"
+                                    className="bg-slate-800 hover:bg-slate-700 text-cyan-100 font-tech border border-slate-600 hover:border-cyan-500 rounded flex items-center justify-center gap-2 disabled:opacity-50 transition-all py-3 shadow-lg"
                                 >
                                     <Sword size={16} /> HARPOON
                                 </button>
                                 <button 
                                     onClick={() => playerAction('heal')}
                                     disabled={turn !== 'player'}
-                                    className="bg-green-900/30 hover:bg-green-900/50 text-green-400 font-tech border-b-4 border-green-900 hover:border-green-500 rounded flex items-center justify-center gap-2 disabled:opacity-50 active:border-b-0 active:translate-y-1 transition-all"
+                                    className="bg-green-900/20 hover:bg-green-900/40 text-green-400 font-tech border border-green-800/50 hover:border-green-500 rounded flex items-center justify-center gap-2 disabled:opacity-50 transition-all py-3"
                                 >
                                     <Heart size={16} /> REPAIR
                                 </button>
                                 <button 
                                     onClick={() => playerAction('leverage')}
                                     disabled={turn !== 'player'}
-                                    className="bg-yellow-900/30 hover:bg-yellow-900/50 text-yellow-400 font-tech border-b-4 border-yellow-900 hover:border-yellow-500 rounded flex items-center justify-center gap-2 disabled:opacity-50 active:border-b-0 active:translate-y-1 transition-all"
+                                    className="bg-yellow-900/20 hover:bg-yellow-900/40 text-yellow-400 font-tech border border-yellow-800/50 hover:border-yellow-500 rounded flex items-center justify-center gap-2 disabled:opacity-50 transition-all py-3"
                                 >
                                     <Activity size={16} /> 100x LONG
                                 </button>
@@ -232,15 +232,15 @@ export const WhaleRPG: React.FC = () => {
                                 <button 
                                     onClick={() => playerAction('ult')}
                                     disabled={turn !== 'player' || ultCharge < 100}
-                                    className={`relative overflow-hidden font-black font-meme text-xl rounded flex items-center justify-center gap-2 disabled:opacity-50 active:border-b-0 active:translate-y-1 transition-all border-b-4
-                                        ${ultCharge >= 100 ? 'bg-cyan-600 hover:bg-cyan-500 text-white border-cyan-800 animate-pulse shadow-[0_0_20px_#22d3ee]' : 'bg-slate-800 text-slate-500 border-slate-900'}
+                                    className={`relative overflow-hidden font-black font-meme text-xl rounded flex items-center justify-center gap-2 disabled:opacity-50 transition-all border
+                                        ${ultCharge >= 100 ? 'bg-cyan-600 hover:bg-cyan-500 text-white border-cyan-400 animate-pulse shadow-[0_0_20px_#22d3ee]' : 'bg-slate-800 text-slate-500 border-slate-900'}
                                     `}
                                 >
                                     <span className="relative z-10 flex items-center gap-2">
                                         <Flame size={18} /> LIMIT BREAK
                                     </span>
                                     {/* Charge Bar Background */}
-                                    <div className="absolute left-0 bottom-0 top-0 bg-cyan-900/50 z-0 transition-all duration-300" style={{ width: `${ultCharge}%` }} />
+                                    <div className="absolute left-0 bottom-0 top-0 bg-cyan-400/30 z-0 transition-all duration-300" style={{ width: `${ultCharge}%` }} />
                                 </button>
                             </>
                         )}

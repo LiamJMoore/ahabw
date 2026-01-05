@@ -3,6 +3,7 @@ import { HELIUS_API_KEY } from '../constants';
 
 // Updated to the high-performance endpoint
 const RPC_URL = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
+const JUP_PRICE_API = "https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112";
 
 export interface HeliusAssetResponse {
   result: {
@@ -24,6 +25,21 @@ export interface HeliusAssetResponse {
       }
     };
   };
+}
+
+export interface TreasuryAsset {
+    name: string;
+    symbol: string;
+    amount: number;
+    image: string;
+    mint: string;
+}
+
+export interface TreasuryData {
+    solBalance: number;
+    solPrice: number;
+    totalUsd: number;
+    assets: TreasuryAsset[];
 }
 
 export interface BountyTx {
@@ -86,6 +102,72 @@ export const fetchRecentBounties = async (): Promise<BountyTx[]> => {
         buyer: `0x${Math.random().toString(16).substr(2, 4)}...${Math.random().toString(16).substr(2, 4)}`,
         timestamp: now - (i * 100000)
     }));
+};
+
+export const fetchTreasuryPortfolio = async (address: string): Promise<TreasuryData | null> => {
+    try {
+        // 1. Get SOL Balance
+        const solRes = await fetch(RPC_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                jsonrpc: '2.0', id: 'treasury-sol', method: 'getBalance', params: [address]
+            })
+        });
+        const solData = await solRes.json();
+        const solBalance = (solData.result?.value || 0) / 1000000000;
+
+        // 2. Get SOL Price
+        let solPrice = 0;
+        try {
+            const priceRes = await fetch(JUP_PRICE_API);
+            const priceData = await priceRes.json();
+            solPrice = parseFloat(priceData.data?.So11111111111111111111111111111111111111112?.price || "0");
+        } catch (e) {
+            console.warn("Price fetch failed");
+        }
+
+        // 3. Get SPL Assets
+        const assetsRes = await fetch(RPC_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                jsonrpc: '2.0',
+                id: 'treasury-assets',
+                method: 'getAssetsByOwner',
+                params: {
+                    ownerAddress: address,
+                    page: 1,
+                    limit: 20,
+                    displayOptions: { showFungible: true }
+                }
+            })
+        });
+        const assetsData = await assetsRes.json();
+        const items = assetsData.result?.items || [];
+        
+        const assets: TreasuryAsset[] = items
+            .filter((item: any) => item.interface === 'FungibleToken' || item.interface === 'FungibleAsset')
+            .map((item: any) => ({
+                name: item.content?.metadata?.name || "Unknown Token",
+                symbol: item.content?.metadata?.symbol || "UNK",
+                amount: (item.token_info?.balance || 0) / Math.pow(10, item.token_info?.decimals || 0),
+                image: item.content?.links?.image || "",
+                mint: item.id
+            }))
+            .filter((a: TreasuryAsset) => a.amount > 0); // Remove empty balances
+
+        return {
+            solBalance,
+            solPrice,
+            totalUsd: (solBalance * solPrice), // Simplified total for now
+            assets
+        };
+
+    } catch (e) {
+        console.error("Treasury fetch failed", e);
+        return null;
+    }
 };
 
 export type WeatherState = 'STORM' | 'CALM' | 'FOG';

@@ -1,9 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { WeatherState } from '../services/heliusService';
 import { AHAB_CA } from '../constants';
-import { Copy, Check, Twitter, BarChart3, Rocket } from 'lucide-react';
+import { Copy, Check, Rocket, Anchor } from 'lucide-react';
 
 interface HeroProps {
     weather: WeatherState;
@@ -11,11 +11,30 @@ interface HeroProps {
 
 export const Hero: React.FC<HeroProps> = ({ weather }) => {
   const { scrollY } = useScroll();
-  const yAhab = useTransform(scrollY, [0, 1000], [0, 400]);
-  const textScale = useTransform(scrollY, [0, 300], [1, 1.2]);
-  const textOpacity = useTransform(scrollY, [0, 300], [1, 0]);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Parallax Transforms
+  const yBack = useTransform(scrollY, [0, 1000], [0, 500]); // Background moves slow
+  const yText = useTransform(scrollY, [0, 500], [0, 200]);  // Text moves medium
+  const yFore = useTransform(scrollY, [0, 1000], [0, -200]); // Foreground moves up (depth)
   
+  const opacityText = useTransform(scrollY, [0, 400], [1, 0]);
+  const blurText = useTransform(scrollY, [0, 300], ["0px", "20px"]);
+
   const [copied, setCopied] = useState(false);
+
+  // Mouse Spotlight Effect
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+        setMousePos({ 
+            x: (e.clientX / window.innerWidth) * 100, 
+            y: (e.clientY / window.innerHeight) * 100 
+        });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(AHAB_CA);
@@ -23,149 +42,117 @@ export const Hero: React.FC<HeroProps> = ({ weather }) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Neutral Configurations - Dark/Slate aesthetic regardless of weather
-  const weatherConfig = {
-      skyGradient: 'from-[#0f172a] to-[#020617]', // Deep Slate to Black
-      waveColor: '#1e293b', // Slate 800
-      particleColor: '#94a3b8', // Slate 400
-      message: weather === 'STORM' ? 'THE SEA IS ROUGH' : weather === 'CALM' ? 'THE HORIZON IS CLEAR' : 'VISIBILITY LOW',
-      stormLevel: weather === 'STORM' ? 'HIGH' : weather === 'CALM' ? 'STABLE' : 'UNCERTAIN',
-  };
-
   return (
-    <div id="hero" className="absolute inset-0 h-[120vh] w-full overflow-hidden flex items-center justify-center transition-colors duration-1000">
+    <div ref={containerRef} id="hero" className="relative h-[130vh] w-full overflow-hidden flex items-center justify-center bg-[#020617]">
       
-      {/* 1. DYNAMIC OCEAN BACKGROUND */}
-      <div className="absolute inset-0 z-0 bg-slate-900 overflow-hidden transition-colors duration-1000">
-         {/* Static Sky */}
-         <div className={`absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b ${weatherConfig.skyGradient}`} />
-         
-         {/* Neutral Ambient Effects */}
-         {weather === 'STORM' && (
-             <div className="absolute inset-0 z-0 animate-pulse bg-slate-800/20" />
-         )}
+      {/* 1. DYNAMIC LIGHTING / SPOTLIGHT (Cyan Tint) */}
+      <div 
+        className="absolute inset-0 pointer-events-none z-10 transition-opacity duration-1000 mix-blend-screen"
+        style={{
+            background: `radial-gradient(circle 800px at ${mousePos.x}% ${mousePos.y}%, rgba(34,211,238,0.1), transparent 70%)`
+        }}
+      />
 
-         {/* Moving Wave Layer 1 (Far) */}
-         <div className="absolute bottom-0 left-0 right-0 h-[60%] opacity-40 transition-colors duration-1000" 
-              style={{
-                backgroundImage: 'url("https://www.transparenttextures.com/patterns/cubes.png")',
-                backgroundColor: weatherConfig.waveColor,
-                backgroundSize: '100px',
-                animation: weather === 'STORM' ? 'wave 10s linear infinite' : 'wave 25s linear infinite'
-              }}
-         />
+      {/* 2. DEEP OCEAN LAYERS (Parallax) - PRESERVING BLUE */}
+      <motion.div style={{ y: yBack }} className="absolute inset-0 z-0">
+          {/* Base Layer: Rich Deep Blue Gradient */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0f172a] via-[#020617] to-black" />
+          
+          {/* Caustics (Light rays) */}
+          <div className="absolute inset-0 opacity-30 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] animate-pulse mix-blend-overlay" />
+          
+          {/* Moving Fog (Cyan tinted) */}
+          <div className="absolute inset-0 opacity-20 mix-blend-screen" 
+             style={{ 
+                 backgroundImage: 'url("https://www.transparenttextures.com/patterns/foggy-birds.png")',
+                 animation: 'drift 60s linear infinite'
+             }} 
+          />
+      </motion.div>
 
-         {/* Moving Wave Layer 2 (Mid) */}
-         <div className="absolute -bottom-20 left-[-20%] right-[-20%] h-[50%] opacity-60 rounded-[50%] transition-colors duration-1000"
-              style={{ 
-                  backgroundColor: weatherConfig.waveColor,
-                  filter: 'brightness(0.7)',
-                  animation: weather === 'STORM' ? 'swell 4s ease-in-out infinite alternate' : 'swell 10s ease-in-out infinite alternate'
-              }} 
-         >
-            <div className="w-full h-full opacity-30" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
-         </div>
-
-         {/* Moving Wave Layer 3 (Close/Fast) */}
-         <div className="absolute bottom-0 left-0 right-0 h-[30vh] bg-gradient-to-t from-black/80 to-transparent z-10" />
-         
-         {/* The Captain Image (Blended) */}
-         <img 
-            src="/ahab.png" 
-            alt="Captain Ahab" 
-            className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay"
-         />
-      </div>
-
-      {/* 2. ATMOSPHERICS */}
-      <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/20 via-transparent to-black/60 pointer-events-none" />
-      
-      {/* 3. MAIN TITLE CONTENT */}
+      {/* 3. HERO CONTENT */}
       <motion.div 
-        style={{ y: yAhab, scale: textScale, opacity: textOpacity }}
-        className="relative z-20 text-center px-4 flex flex-col items-center w-full max-w-4xl"
+        style={{ y: yText, opacity: opacityText, filter: `blur(${blurText})` }}
+        className="relative z-20 text-center px-4 flex flex-col items-center w-full max-w-6xl"
       >
-        <div className="inline-block border border-slate-700 bg-black/40 backdrop-blur-md px-4 py-1 mb-6 rounded font-tech text-xs tracking-[0.5em] text-slate-400">
-            STORM LEVEL: {weatherConfig.stormLevel}
+        {/* Cinematic Status Line */}
+        <div className="flex items-center gap-4 mb-8">
+            <div className="h-[1px] w-12 bg-gradient-to-r from-transparent to-cyan-400" />
+            <div className="font-tech text-xs tracking-[0.5em] text-cyan-300 uppercase animate-pulse drop-shadow-[0_0_5px_rgba(34,211,238,0.8)]">
+                TARGET: {weather === 'STORM' ? 'RED_CANDLE_STORM' : 'CLEAR_WATERS'}
+            </div>
+            <div className="h-[1px] w-12 bg-gradient-to-l from-transparent to-cyan-400" />
         </div>
 
-        <h1 className="font-meme text-[9rem] md:text-[15rem] leading-[0.8] text-transparent bg-clip-text bg-gradient-to-t from-slate-100 to-slate-400 drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)] filter blur-[0.5px] py-4 px-8">
-          $AHAB
-        </h1>
+        {/* LIQUID TITLE */}
+        {/* Adjusted padding to fix 'B' fill clipping */}
+        <div className="relative mb-6">
+            <h1 className="font-meme text-[8rem] sm:text-[10rem] md:text-[14rem] leading-[0.8] text-transparent bg-clip-text bg-gradient-to-t from-cyan-100 via-white to-cyan-50 drop-shadow-[0_0_50px_rgba(6,182,212,0.4)] liquid-text p-4 pr-12">
+              $AHAB
+            </h1>
+            {/* Outline duplicate for depth */}
+            <h1 className="absolute inset-0 font-meme text-[8rem] sm:text-[10rem] md:text-[14rem] leading-[0.8] text-transparent stroke-cyan-200 stroke-2 opacity-30 pointer-events-none p-4 pr-12" style={{ WebkitTextStroke: '2px rgba(34,211,238,0.3)' }}>
+              $AHAB
+            </h1>
+        </div>
         
-        <h2 className="font-display text-2xl md:text-4xl mt-4 tracking-widest uppercase text-slate-300">
-            {weatherConfig.message}
+        <h2 className="font-display text-xl md:text-3xl tracking-[0.3em] uppercase text-cyan-200/90 mb-8 border-y border-cyan-500/30 py-4 shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+            The Whale Must Die
         </h2>
 
-        <p className="max-w-xl mx-auto mt-6 font-mono text-slate-300 text-sm md:text-base bg-black/40 p-4 border-l-2 border-slate-500 backdrop-blur-sm mb-12">
-            "There is no utility. There is no roadmap. Only the hunt. 
-            We are the Pequod. The chart is broken. The compass spins."
+        <p className="max-w-xl mx-auto font-special text-cyan-100/80 text-lg leading-relaxed text-shadow-sm mb-12">
+            "I see in him outrageous strength, with an inscrutable malice sinewing it. That is what I hate."
         </p>
 
-        {/* REPLACED BUTTON WITH COMMS LINKS */}
-        <div className="w-full flex flex-col md:flex-row items-center gap-4 justify-center">
+        {/* ACTION MODULE */}
+        <div className="flex flex-col md:flex-row items-center gap-6 w-full max-w-2xl">
             
-            {/* CONTRACT ADDRESS BAR */}
+            {/* CA Card */}
             <button 
                 onClick={handleCopy}
-                className="w-full md:w-auto md:min-w-[400px] bg-black/60 hover:bg-black/80 backdrop-blur-md border border-slate-600 hover:border-cyan-500 rounded-xl p-2 flex items-center justify-between group transition-all duration-300 shadow-[0_0_20px_rgba(0,0,0,0.3)]"
+                className="w-full bg-[#020617]/60 backdrop-blur-md border border-cyan-800 hover:border-cyan-400 transition-all duration-300 rounded-xl p-1 group relative overflow-hidden"
             >
-                <div className="bg-slate-800 px-3 py-2 rounded text-slate-400 font-mono text-xs border border-slate-700 group-hover:bg-cyan-900/20 group-hover:text-cyan-400 transition-colors">
-                    CA
-                </div>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                 
-                <code className="font-mono text-slate-300 text-xs md:text-sm truncate px-3 flex-1 text-center tracking-wider group-hover:text-cyan-200 transition-colors">
-                    {AHAB_CA}
-                </code>
-                
-                <div className="flex items-center gap-2 bg-slate-900/50 px-3 py-2 rounded border border-slate-800">
-                    <span className="text-[10px] font-tech text-slate-500 group-hover:text-cyan-400 uppercase tracking-wider hidden sm:block">
-                        {copied ? 'COPIED' : 'COPY'}
-                    </span>
-                    {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} className="text-slate-400 group-hover:text-cyan-400" />}
+                <div className="flex items-center justify-between bg-[#0f172a]/50 rounded-lg p-3">
+                    <div className="flex flex-col items-start">
+                        <span className="text-[9px] font-tech text-cyan-300 uppercase tracking-wider">CONTRACT ADDRESS</span>
+                        <code className="font-mono text-cyan-100 text-xs sm:text-sm drop-shadow-md">{AHAB_CA.slice(0, 6)}...{AHAB_CA.slice(-6)}</code>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs font-bold text-cyan-950 bg-cyan-400/80 px-3 py-2 rounded uppercase shadow-[0_0_10px_rgba(34,211,238,0.5)]">
+                        {copied ? 'COPIED' : 'COPY'} {copied ? <Check size={14}/> : <Copy size={14}/>}
+                    </div>
                 </div>
             </button>
 
-            {/* ACTION BUTTONS */}
-            <div className="flex flex-wrap gap-4 w-full md:w-auto justify-center">
-                
-                {/* BUY BUTTON */}
-                <a 
-                    href="https://pump.fun/coin/6Wv4Li6toFybiJajVN3ZBTi7hF8DGbujmewqc86tpump" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 text-white px-6 py-4 rounded-xl border-b-4 border-red-800 hover:border-red-900 font-meme tracking-widest text-xl transition-all hover:-translate-y-1 shadow-[0_0_20px_rgba(220,38,38,0.4)] min-w-[150px]"
-                >
-                    <Rocket size={24} className="animate-pulse" />
-                    <span>BUY</span>
-                </a>
-
-                {/* CHART BUTTON */}
-                <a 
-                    href="https://dexscreener.com/solana/edo9kgxuczcambfrpcpscuweu7i5jscuauxw294e8drj" 
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#1a1d21]/80 hover:bg-[#202429] backdrop-blur-md text-white px-6 py-4 rounded-xl border border-slate-700 hover:border-white font-tech transition-all hover:-translate-y-1 shadow-lg min-w-[120px]"
-                >
-                    <BarChart3 size={18} className="text-cyan-500" />
-                    <span>CHART</span>
-                </a>
-
-                {/* X BUTTON */}
-                <a 
-                    href="https://x.com/CaptAhabCrypto" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-black/60 hover:bg-black backdrop-blur-md text-white px-6 py-4 rounded-xl border border-slate-700 hover:border-white font-tech transition-all hover:-translate-y-1 shadow-lg min-w-[80px]"
-                >
-                    <Twitter size={18} className="text-[#1DA1F2]" />
-                    <span className="md:hidden lg:inline">X</span>
-                </a>
-            </div>
-
+            {/* Main CTA */}
+            <a 
+                href="https://pump.fun/coin/6Wv4Li6toFybiJajVN3ZBTi7hF8DGbujmewqc86tpump"
+                target="_blank"
+                rel="noreferrer"
+                className="w-full md:w-auto px-8 py-4 bg-red-800 hover:bg-red-700 text-white font-meme text-2xl tracking-widest rounded-xl shadow-[0_0_30px_rgba(220,38,38,0.3)] hover:shadow-[0_0_50px_rgba(220,38,38,0.5)] hover:scale-105 transition-all flex items-center justify-center gap-3 border-b-4 border-red-950 active:border-b-0 active:translate-y-1"
+            >
+                <Rocket className="animate-bounce" /> BUY NOW
+            </a>
         </div>
 
       </motion.div>
+
+      {/* 4. FOREGROUND PARALLAX ELEMENTS */}
+      <motion.div style={{ y: yFore }} className="absolute inset-0 pointer-events-none z-30">
+          {/* Left Chains */}
+          <img src="https://www.transparenttextures.com/patterns/dark-matter.png" className="absolute -left-20 top-[40%] w-64 h-full opacity-30 mix-blend-multiply" />
+          
+          {/* Scroll Indicator */}
+          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce opacity-80">
+            <span className="font-tech text-[10px] tracking-[0.3em] text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.8)]">DIVE DEEPER</span>
+            <Anchor size={24} className="text-cyan-400" />
+          </div>
+      </motion.div>
+
+      <style>{`
+        @keyframes drift { 0% { background-position: 0 0; } 100% { background-position: 1000px 0; } }
+      `}</style>
 
     </div>
   );

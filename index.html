@@ -7,98 +7,54 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Cinzel:wght@400;700;900&family=Share+Tech+Mono&family=Special+Elite&display=swap" rel="stylesheet">
     <script>
-      // Polyfill process for browser environment to prevent crashes
       window.process = { env: {} };
     </script>
     <style>
       body {
-        font-family: 'Special Elite', cursive; /* Gritty Typewriter feel */
+        font-family: 'Special Elite', cursive;
         background-color: #020617;
         color: #fff;
         overflow-x: hidden;
         cursor: crosshair;
       }
-      h1, h2, h3, h4, .font-display {
-        font-family: 'Cinzel', serif;
-      }
-      .font-meme {
-        font-family: 'Bangers', cursive;
-      }
-      .font-tech {
-        font-family: 'Share Tech Mono', monospace;
-      }
+      h1, h2, h3, h4, .font-display { font-family: 'Cinzel', serif; }
+      .font-meme { font-family: 'Bangers', cursive; }
+      .font-tech { font-family: 'Share Tech Mono', monospace; }
 
-      /* CRT Scanline Effect */
-      .crt::before {
-        content: " ";
-        display: block;
-        position: absolute;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        right: 0;
-        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-        z-index: 2;
-        background-size: 100% 2px, 3px 100%;
-        pointer-events: none;
-      }
+      /* --- CINEMATIC GLOBAL EFFECTS --- */
 
-      /* Rain Animation */
-      .rain {
+      /* 1. CRT Barrel Distortion & Scanlines (Subtle Blue Tint) */
+      .cinematic-overlay {
         position: fixed;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 5;
-        background-image: url('https://raw.githubusercontent.com/redstapler/rain-effect/master/rain.png');
-        animation: rain .3s linear infinite;
-        opacity: 0.3;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+        background-size: 100% 3px, 3px 100%;
         pointer-events: none;
-      }
-      @keyframes rain {
-        0% { background-position: 0% 0%; }
-        100% { background-position: 20% 100%; }
+        z-index: 9999;
+        box-shadow: inset 0 0 100px rgba(0,20,40,0.5); /* Blue-tinted vignette */
       }
 
-      /* Ocean Wave Animations */
-      @keyframes wave {
-        0% { background-position-x: 0; }
-        100% { background-position-x: 1000px; }
-      }
-      
-      @keyframes swell {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(15px); }
-      }
-
-      /* Alarm Pulse */
-      @keyframes alarm-flash {
-        0%, 100% { box-shadow: inset 0 0 0 transparent; }
-        50% { box-shadow: inset 0 0 100px rgba(220, 38, 38, 0.5); }
-      }
-      
-      .alarm-active {
-        animation: alarm-flash 1s infinite;
+      /* 2. Film Grain */
+      .film-grain {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        pointer-events: none;
+        z-index: 9998;
+        opacity: 0.05;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
       }
 
-      /* Custom Scrollbar */
-      ::-webkit-scrollbar {
-        width: 6px;
+      /* 3. Liquid Text Effect Class */
+      .liquid-text {
+        filter: url(#liquid);
       }
-      ::-webkit-scrollbar-track {
-        background: #020617;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #ef4444; 
-      }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: #082f49; }
+      ::-webkit-scrollbar-thumb { background: #0ea5e9; border-radius: 3px; }
       
-      .text-glow {
-        text-shadow: 0 0 10px rgba(34, 211, 238, 0.7);
-      }
-      
-      .blood-text {
-        text-shadow: 2px 2px 0px #3f0a0a;
-      }
+      .text-glow { text-shadow: 0 0 20px rgba(34, 211, 238, 0.6); }
     </style>
   <script type="importmap">
 {
@@ -118,6 +74,18 @@
 </head>
   <body>
     <div id="root"></div>
+    
+    <!-- SVG FILTERS FOR LIQUID EFFECTS -->
+    <svg style="position: absolute; width: 0; height: 0;">
+      <defs>
+        <filter id="liquid">
+          <feTurbulence baseFrequency="0.015" numOctaves="3" result="warp" type="fractalNoise">
+            <animate attributeName="baseFrequency" dur="10s" values="0.015;0.005;0.015" repeatCount="indefinite" />
+          </feTurbulence>
+          <feDisplacementMap in="SourceGraphic" in2="warp" scale="30" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </defs>
+    </svg>
   <script type="module" src="/index.tsx"></script>
 </body>
 </html>

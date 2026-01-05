@@ -9,7 +9,6 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Sonar', id: SectionId.RADAR },
   { label: 'The Flipperning', id: SectionId.FLIPPENING },
   { label: 'Defend', id: SectionId.GAME },
-  { label: 'Oracle', id: SectionId.ORACLE },
 ];
 
 export const TOKEN_STATS: TokenStat[] = [

@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { SectionId } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, Edit, Image as ImageIcon, RefreshCcw, Type } from 'lucide-react';
+import { Download, Edit, Image as ImageIcon, RefreshCcw, Type, Monitor } from 'lucide-react';
 
 const MEME_URLS = [
     "https://i.ibb.co/VW0dKSZj/1.jpg",
@@ -66,7 +66,6 @@ export const MemeGallery: React.FC = () => {
             img.src = selectedTemplate;
             
             img.onload = () => {
-                // Resize logic to fit canvas while maintaining aspect ratio
                 const maxWidth = 800;
                 const scale = maxWidth / img.width;
                 canvas.width = maxWidth;
@@ -75,28 +74,24 @@ export const MemeGallery: React.FC = () => {
                 if (ctx) {
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                     
-                    // Text Styles
                     ctx.font = `900 ${fontSize}px Impact`;
                     ctx.fillStyle = 'white';
                     ctx.strokeStyle = 'black';
                     ctx.lineWidth = fontSize / 15;
                     ctx.textAlign = 'center';
 
-                    // Top Text
                     if (topText) {
                         ctx.strokeText(topText.toUpperCase(), canvas.width / 2, fontSize + 20);
                         ctx.fillText(topText.toUpperCase(), canvas.width / 2, fontSize + 20);
                     }
 
-                    // Bottom Text
                     if (bottomText) {
                         ctx.strokeText(bottomText.toUpperCase(), canvas.width / 2, canvas.height - 30);
                         ctx.fillText(bottomText.toUpperCase(), canvas.width / 2, canvas.height - 30);
                     }
 
-                    // Watermark
                     ctx.font = '20px monospace';
-                    ctx.fillStyle = 'rgba(34, 211, 238, 0.5)'; // Cyan
+                    ctx.fillStyle = 'rgba(34, 211, 238, 0.5)';
                     ctx.textAlign = 'right';
                     ctx.fillText('$AHAB', canvas.width - 20, canvas.height - 10);
                 }
@@ -114,33 +109,34 @@ export const MemeGallery: React.FC = () => {
     };
 
     return (
-        <section id={SectionId.MEMES} className="py-24 bg-[#0a0a0a] relative border-t border-slate-900">
+        <section id={SectionId.MEMES} className="py-24 bg-[#020617] relative border-t border-cyan-900/30">
             {/* Background Texture */}
-            <div className="absolute inset-0 opacity-20 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#020617] to-[#0f172a]" />
+            <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
 
             <div className="max-w-7xl mx-auto px-4 relative z-10">
                 <div className="flex flex-col md:flex-row justify-between items-end mb-12">
                     <div>
-                        <h2 className="font-meme text-5xl text-white tracking-widest">
-                            PROPAGANDA <span className="text-cyan-500">FACTORY</span>
+                        <div className="flex items-center gap-2 mb-2 text-cyan-400 font-tech text-xs tracking-widest">
+                            <Monitor size={14} className="animate-pulse" /> IMAGE ARCHIVE // 4CHAN_MIRROR
+                        </div>
+                        <h2 className="font-meme text-5xl text-white tracking-widest drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">
+                            MEME <span className="text-cyan-400">FACTORY</span>
                         </h2>
-                        <p className="font-mono text-slate-400 mt-2 tracking-wider">
-                            WEAPONIZED AUTISM // SPREAD THE MESSAGE
-                        </p>
                     </div>
                     
                     <div className="flex gap-4 mt-4 md:mt-0">
                         <button 
                             onClick={() => setView('GALLERY')}
-                            className={`px-6 py-2 rounded-lg font-tech border transition-all flex items-center gap-2 ${view === 'GALLERY' ? 'bg-cyan-900/50 border-cyan-400 text-white' : 'bg-transparent border-slate-700 text-slate-500 hover:text-white'}`}
+                            className={`px-6 py-2 rounded-sm font-tech border transition-all flex items-center gap-2 ${view === 'GALLERY' ? 'bg-cyan-500 text-black border-cyan-400 font-bold' : 'bg-transparent border-cyan-900 text-cyan-500 hover:text-cyan-200'}`}
                         >
-                            <ImageIcon size={16} /> GALLERY
+                            <ImageIcon size={16} /> ARCHIVE
                         </button>
                         <button 
                             onClick={() => setView('FACTORY')}
-                            className={`px-6 py-2 rounded-lg font-tech border transition-all flex items-center gap-2 ${view === 'FACTORY' ? 'bg-cyan-900/50 border-cyan-400 text-white' : 'bg-transparent border-slate-700 text-slate-500 hover:text-white'}`}
+                            className={`px-6 py-2 rounded-sm font-tech border transition-all flex items-center gap-2 ${view === 'FACTORY' ? 'bg-cyan-500 text-black border-cyan-400 font-bold' : 'bg-transparent border-cyan-900 text-cyan-500 hover:text-cyan-200'}`}
                         >
-                            <Edit size={16} /> MEME MAKER
+                            <Edit size={16} /> GENERATOR
                         </button>
                     </div>
                 </div>
@@ -154,29 +150,33 @@ export const MemeGallery: React.FC = () => {
                                     initial={{ opacity: 0, y: 20 }}
                                     whileInView={{ opacity: 1, y: 0 }}
                                     transition={{ delay: i * 0.05 }}
-                                    className="break-inside-avoid relative group rounded-xl overflow-hidden border-2 border-slate-800 hover:border-cyan-500 transition-colors"
+                                    className="break-inside-avoid relative group rounded border border-cyan-900/50 hover:border-cyan-400/80 transition-all overflow-hidden bg-black"
                                 >
                                     <img 
                                         src={url} 
                                         alt={`Meme ${i}`} 
-                                        className="w-full h-auto object-cover"
+                                        className="w-full h-auto object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                                         loading="lazy"
                                     />
-                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 backdrop-blur-sm">
-                                        <button 
-                                            onClick={() => { setSelectedTemplate(url); setView('FACTORY'); window.scrollTo({top: document.getElementById(SectionId.MEMES)?.offsetTop, behavior: 'smooth'}); }}
-                                            className="bg-cyan-500 text-black px-4 py-2 rounded font-bold font-tech hover:scale-105 transition-transform flex items-center gap-2"
-                                        >
-                                            <Edit size={14} /> REMIX
-                                        </button>
-                                        <a 
-                                            href={url} 
-                                            target="_blank" 
-                                            rel="noreferrer"
-                                            className="bg-white text-black px-4 py-2 rounded font-bold font-tech hover:scale-105 transition-transform flex items-center gap-2"
-                                        >
-                                            <Download size={14} /> SAVE
-                                        </a>
+                                    {/* Tech Overlay on Hover */}
+                                    <div className="absolute inset-0 bg-cyan-900/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-4 backdrop-blur-sm">
+                                        <div className="font-tech text-cyan-300 text-xs tracking-widest mb-2">IMAGE_ID: {i + 1000}</div>
+                                        <div className="flex gap-3">
+                                            <button 
+                                                onClick={() => { setSelectedTemplate(url); setView('FACTORY'); window.scrollTo({top: document.getElementById(SectionId.MEMES)?.offsetTop, behavior: 'smooth'}); }}
+                                                className="bg-cyan-500 text-black px-4 py-2 rounded font-bold font-tech hover:scale-105 transition-transform flex items-center gap-2"
+                                            >
+                                                <Edit size={14} /> REMIX
+                                            </button>
+                                            <a 
+                                                href={url} 
+                                                target="_blank" 
+                                                rel="noreferrer"
+                                                className="bg-black border border-cyan-500 text-cyan-500 px-4 py-2 rounded font-bold font-tech hover:bg-cyan-950 transition-colors flex items-center gap-2"
+                                            >
+                                                <Download size={14} /> SAVE
+                                            </a>
+                                        </div>
                                     </div>
                                 </motion.div>
                             ))}
@@ -185,32 +185,32 @@ export const MemeGallery: React.FC = () => {
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* EDITOR CONTROLS */}
-                        <div className="lg:col-span-1 space-y-6 bg-slate-900/50 p-6 rounded-xl border border-slate-800">
+                        <div className="lg:col-span-1 space-y-6 bg-[#0f172a]/20 p-6 rounded border border-cyan-900 backdrop-blur-sm">
                             <div>
-                                <h3 className="text-cyan-400 font-tech mb-4 flex items-center gap-2"><Type size={18}/> TEXT CONTROLS</h3>
+                                <h3 className="text-cyan-400 font-tech mb-4 flex items-center gap-2 border-b border-cyan-900/50 pb-2"><Type size={18}/> TEXT INPUT</h3>
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="text-xs text-slate-500 font-mono">TOP TEXT</label>
+                                        <label className="text-[10px] text-cyan-700 font-mono tracking-widest mb-1 block">TOP TEXT</label>
                                         <input 
                                             type="text" 
                                             value={topText}
                                             onChange={(e) => setTopText(e.target.value)}
-                                            className="w-full bg-black border border-slate-700 rounded p-3 text-white focus:border-cyan-500 outline-none font-bold"
+                                            className="w-full bg-[#020617] border border-cyan-800 rounded p-3 text-cyan-100 focus:border-cyan-400 outline-none font-bold font-mono"
                                             placeholder="POV: YOU SOLD"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-xs text-slate-500 font-mono">BOTTOM TEXT</label>
+                                        <label className="text-[10px] text-cyan-700 font-mono tracking-widest mb-1 block">BOTTOM TEXT</label>
                                         <input 
                                             type="text" 
                                             value={bottomText}
                                             onChange={(e) => setBottomText(e.target.value)}
-                                            className="w-full bg-black border border-slate-700 rounded p-3 text-white focus:border-cyan-500 outline-none font-bold"
+                                            className="w-full bg-[#020617] border border-cyan-800 rounded p-3 text-cyan-100 focus:border-cyan-400 outline-none font-bold font-mono"
                                             placeholder="AT THE BOTTOM"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-xs text-slate-500 font-mono mb-2 block">FONT SIZE</label>
+                                        <label className="text-[10px] text-cyan-700 font-mono tracking-widest mb-2 block">FONT SIZE</label>
                                         <input 
                                             type="range" 
                                             min="20" 
@@ -223,14 +223,14 @@ export const MemeGallery: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="pt-6 border-t border-slate-800">
-                                <h3 className="text-cyan-400 font-tech mb-4 flex items-center gap-2"><ImageIcon size={18}/> TEMPLATES</h3>
-                                <div className="grid grid-cols-4 gap-2 max-h-[300px] overflow-y-auto scrollbar-thin pr-2">
+                            <div className="pt-6 border-t border-cyan-900/30">
+                                <h3 className="text-cyan-400 font-tech mb-4 flex items-center gap-2"><ImageIcon size={18}/> TEMPLATE SELECT</h3>
+                                <div className="grid grid-cols-4 gap-2 max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-800 pr-2">
                                     {MEME_URLS.map((url, i) => (
                                         <button 
                                             key={i}
                                             onClick={() => setSelectedTemplate(url)}
-                                            className={`border-2 rounded overflow-hidden aspect-square relative ${selectedTemplate === url ? 'border-cyan-500' : 'border-slate-800 hover:border-slate-500'}`}
+                                            className={`border-2 rounded overflow-hidden aspect-square relative ${selectedTemplate === url ? 'border-cyan-400 opacity-100' : 'border-cyan-900 opacity-60 hover:opacity-100'}`}
                                         >
                                             <img src={url} className="w-full h-full object-cover" loading="lazy" />
                                         </button>
@@ -241,7 +241,7 @@ export const MemeGallery: React.FC = () => {
                             <div className="flex gap-4 pt-4">
                                 <button 
                                     onClick={() => { setTopText(''); setBottomText(''); }}
-                                    className="flex-1 bg-slate-800 text-slate-300 py-3 rounded font-bold hover:bg-slate-700 flex items-center justify-center gap-2"
+                                    className="flex-1 bg-cyan-950/50 text-cyan-400 border border-cyan-800 py-3 rounded font-bold hover:bg-cyan-900/50 flex items-center justify-center gap-2"
                                 >
                                     <RefreshCcw size={18}/> RESET
                                 </button>
@@ -249,14 +249,20 @@ export const MemeGallery: React.FC = () => {
                                     onClick={handleDownload}
                                     className="flex-1 bg-cyan-600 text-black py-3 rounded font-bold hover:bg-cyan-500 flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(34,211,238,0.3)]"
                                 >
-                                    <Download size={18}/> DOWNLOAD
+                                    <Download size={18}/> EXPORT
                                 </button>
                             </div>
                         </div>
 
                         {/* PREVIEW */}
-                        <div className="lg:col-span-2 bg-[#050505] rounded-xl border border-slate-800 flex items-center justify-center p-4 min-h-[500px]">
-                            <canvas ref={canvasRef} className="max-w-full h-auto shadow-2xl" />
+                        <div className="lg:col-span-2 bg-[#020617] rounded border border-cyan-900 flex items-center justify-center p-4 min-h-[500px] relative">
+                             {/* Corners */}
+                             <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-cyan-500" />
+                             <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-cyan-500" />
+                             <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-cyan-500" />
+                             <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-cyan-500" />
+                             
+                            <canvas ref={canvasRef} className="max-w-full h-auto shadow-2xl border border-cyan-900/50" />
                         </div>
                     </div>
                 )}

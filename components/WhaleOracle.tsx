@@ -1,13 +1,15 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { SectionId, ChatMessage } from '../types';
 import { generateAhabWisdom, generateAhabSpeech } from '../services/geminiService';
-import { Send, MessageSquareWarning, Volume2 } from 'lucide-react';
+import { Send, Terminal, Volume2, Mic, Activity } from 'lucide-react';
+import { decodeBase64, pcmToAudioBuffer } from '../utils';
 
 export const WhaleOracle: React.FC = () => {
   const [query, setQuery] = useState('');
   const [history, setHistory] = useState<ChatMessage[]>([
-    { role: 'model', text: 'OI! YOU THERE! ARE YOU BUYING OR CRYING? ASK ME ANYTHING!' }
+    { role: 'model', text: 'CAPTAIN ON DECK. SPEAK YOUR MIND, SAILOR, OR GET OFF MY BRIDGE.' }
   ]);
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -22,17 +24,12 @@ export const WhaleOracle: React.FC = () => {
   const playAudio = async (base64Audio: string) => {
       try {
         if (!audioContextRef.current) {
-            audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+            audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
         }
         const ctx = audioContextRef.current;
-        const audioStr = atob(base64Audio);
-        const len = audioStr.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-            bytes[i] = audioStr.charCodeAt(i);
-        }
+        const bytes = decodeBase64(base64Audio);
+        const audioBuffer = pcmToAudioBuffer(bytes, ctx, 24000);
         
-        const audioBuffer = await ctx.decodeAudioData(bytes.buffer);
         const source = ctx.createBufferSource();
         source.buffer = audioBuffer;
         source.connect(ctx.destination);
@@ -64,66 +61,107 @@ export const WhaleOracle: React.FC = () => {
   };
 
   return (
-    <section id={SectionId.ORACLE} className="py-24 bg-gradient-to-b from-slate-900 to-black flex justify-center px-4">
-      <div className="w-full max-w-3xl">
-        <div className="flex items-center gap-3 mb-8 justify-center">
-            <MessageSquareWarning className="text-yellow-400 w-10 h-10 animate-bounce" />
-            <div className="text-center">
-                <h2 className="text-4xl md:text-5xl font-meme text-white">ASK <span className="text-yellow-400">THE CAPTAIN</span></h2>
-                <div className="flex items-center justify-center gap-2 text-xs font-mono text-cyan-400 mt-1">
-                    <Volume2 size={12} /> AUDIO ENABLED (GEMINI 2.5)
+    <section id={SectionId.ORACLE} className="py-32 bg-[#020617] flex justify-center px-4 relative overflow-hidden">
+      
+      {/* Background Tech Elements */}
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/circuit-board.png')] opacity-5 pointer-events-none" />
+      <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-cyan-900 to-transparent" />
+
+      <div className="w-full max-w-4xl relative z-10">
+        
+        {/* Terminal Header */}
+        <div className="flex items-center justify-between mb-8 border-b-2 border-cyan-900 pb-4">
+            <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-cyan-950 rounded flex items-center justify-center border border-cyan-700 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+                    <Terminal className="text-cyan-400" size={24} />
                 </div>
+                <div>
+                    <h2 className="text-3xl font-meme text-white tracking-widest">AHAB.<span className="text-cyan-500">AI</span></h2>
+                    <div className="flex items-center gap-2 text-[10px] font-tech text-cyan-600">
+                        <Activity size={10} className="animate-pulse" /> NEURAL LINK ESTABLISHED
+                    </div>
+                </div>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-mono text-cyan-800 bg-cyan-950/20 px-3 py-1 rounded border border-cyan-900/50">
+                 <Volume2 size={12} className="text-cyan-500"/> AUDIO SYNTHESIS: ON
             </div>
         </div>
 
-        <div className="bg-[#111] border-4 border-slate-800 rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-          <div className="h-[450px] overflow-y-auto p-6 space-y-4 scroll-smooth bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" ref={scrollRef}>
+        {/* Terminal Window */}
+        <div className="bg-[#050b14] border border-cyan-800 rounded-lg overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] relative">
+          
+          {/* Scanline Overlay */}
+          <div className="absolute inset-0 pointer-events-none z-20 opacity-10" style={{ background: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06))', backgroundSize: '100% 2px, 3px 100%' }} />
+
+          <div className="h-[500px] overflow-y-auto p-6 space-y-6 scroll-smooth scrollbar-thin scrollbar-thumb-cyan-900 scrollbar-track-black" ref={scrollRef}>
             {history.map((msg, i) => (
               <motion.div 
                 key={i}
-                initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
+                initial={{ opacity: 0, x: msg.role === 'user' ? 20 : -20 }}
+                animate={{ opacity: 1, x: 0 }}
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <div className={`max-w-[85%] p-5 rounded-2xl font-bold text-lg shadow-lg relative ${
-                  msg.role === 'user' 
-                    ? 'bg-cyan-600 text-white rounded-tr-none' 
-                    : 'bg-yellow-500 text-black rounded-tl-none font-meme text-xl tracking-wide'
-                }`}>
-                  {msg.role === 'model' && (
-                    <div className="absolute -top-6 left-0 bg-yellow-400 text-black text-xs px-2 py-1 rounded font-bold border border-black flex items-center gap-1">
-                        <span>CPT. AHAB 🐋</span>
+                <div className={`max-w-[85%] relative group`}>
+                    {/* Speaker Label */}
+                    <div className={`text-[9px] font-tech mb-1 ${msg.role === 'user' ? 'text-right text-cyan-600' : 'text-left text-yellow-600'}`}>
+                        {msg.role === 'user' ? 'YOU' : 'CPT. AHAB'}
                     </div>
-                  )}
-                  {msg.text}
+                    
+                    {/* Bubble */}
+                    <div className={`p-4 rounded-sm border font-mono text-sm md:text-base shadow-lg backdrop-blur-sm ${
+                        msg.role === 'user' 
+                        ? 'bg-cyan-950/40 border-cyan-700 text-cyan-100 rounded-tr-none' 
+                        : 'bg-[#1a1405]/80 border-yellow-800/60 text-yellow-100 rounded-tl-none'
+                    }`}>
+                        {msg.text}
+                    </div>
+
+                    {/* Decor Corner */}
+                    <div className={`absolute top-0 w-2 h-2 border-t border-l ${msg.role === 'user' ? 'right-0 border-cyan-500' : 'left-0 border-yellow-500'}`} />
                 </div>
               </motion.div>
             ))}
+            
             {loading && (
               <div className="flex justify-start">
-                 <div className="bg-slate-800 p-4 rounded-2xl rounded-tl-none border border-slate-700">
-                    <span className="animate-pulse text-cyan-400 font-mono">SCREAMING AT THE OCEAN...</span>
+                 <div className="bg-cyan-950/20 p-3 rounded-sm border border-cyan-900 flex items-center gap-3">
+                    <div className="flex gap-1 h-3 items-end">
+                        <div className="w-1 bg-cyan-500 animate-music-bar" style={{height:'40%'}}/>
+                        <div className="w-1 bg-cyan-500 animate-music-bar" style={{height:'80%', animationDelay:'0.1s'}}/>
+                        <div className="w-1 bg-cyan-500 animate-music-bar" style={{height:'60%', animationDelay:'0.2s'}}/>
+                    </div>
+                    <span className="text-cyan-500 font-tech text-xs animate-pulse">THINKING...</span>
                  </div>
               </div>
             )}
           </div>
 
-          <form onSubmit={handleAsk} className="p-4 border-t-4 border-slate-800 bg-[#0a0a0a] flex gap-3">
+          {/* Input Area */}
+          <form onSubmit={handleAsk} className="p-4 bg-[#020617] border-t border-cyan-800 flex gap-0 relative z-30">
+            <div className="flex items-center justify-center bg-cyan-950/30 border-y border-l border-cyan-800 px-4 text-cyan-600">
+                <span className="font-mono">{'>'}</span>
+            </div>
             <input 
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Where is the whale? When moon?"
-              className="flex-1 bg-slate-900 border-2 border-slate-700 text-white px-6 py-4 rounded-xl focus:outline-none focus:border-cyan-500 font-bold text-lg placeholder:text-slate-600"
+              placeholder="Query the Captain..."
+              className="flex-1 bg-cyan-950/10 border border-cyan-800 text-white px-4 py-4 focus:outline-none focus:bg-cyan-950/20 font-mono text-sm placeholder:text-cyan-900"
             />
             <button 
               type="submit"
               disabled={loading}
-              className="bg-cyan-500 hover:bg-cyan-400 text-black px-6 py-4 rounded-xl transition-all active:scale-95 disabled:opacity-50 font-black shadow-[0_0_15px_#22d3ee]"
+              className="bg-cyan-800 hover:bg-cyan-700 text-white px-8 py-4 font-tech tracking-widest transition-all disabled:opacity-50 border border-cyan-600 shadow-[0_0_15px_rgba(6,182,212,0.2)]"
             >
-              <Send size={24} />
+              SEND
             </button>
           </form>
+        </div>
+        
+        <div className="text-center mt-4">
+             <p className="text-[10px] font-tech text-cyan-900">
+                POWERED BY GEMINI 2.5 FLASH // LATENCY: 42ms // SECURE CHANNEL
+             </p>
         </div>
       </div>
     </section>

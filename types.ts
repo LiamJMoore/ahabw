@@ -12,8 +12,8 @@ export enum SectionId {
   TOKENOMICS = 'tokenomics',
   RADAR = 'radar',
   FLIPPENING = 'flippening',
+  MEMES = 'memes',
   ORACLE = 'oracle',
-  MEMES = 'memes'
 }
 
 export interface NavItem {

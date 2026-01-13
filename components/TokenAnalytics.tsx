@@ -47,6 +47,8 @@ const fetchHolderFirstAcquisition = async (
     tokenMint: string
 ): Promise<HolderDuration | null> => {
     try {
+        console.log(`Fetching tx history for wallet: ${walletAddress}`);
+        
         const response = await fetch(
             `${HELIUS_API_BASE}/addresses/${walletAddress}/transactions?api-key=${HELIUS_API_KEY}&limit=100`
         );
@@ -54,8 +56,11 @@ const fetchHolderFirstAcquisition = async (
         const transactions = await response.json();
         
         if (!Array.isArray(transactions) || transactions.length === 0) {
+            console.log(`No transactions found for ${walletAddress}`);
             return null;
         }
+
+        console.log(`Found ${transactions.length} total transactions for ${walletAddress}`);
 
         // Find all transactions involving this specific token
         const tokenTxs = transactions.filter((tx: any) => {
@@ -64,6 +69,8 @@ const fetchHolderFirstAcquisition = async (
             );
             return hasTokenTransfer;
         });
+
+        console.log(`Found ${tokenTxs.length} transactions involving the token`);
 
         if (tokenTxs.length === 0) {
             return null;
@@ -106,6 +113,8 @@ const fetchHolderFirstAcquisition = async (
 
         const firstTxTimestamp = firstTx.timestamp * 1000;
         const daysHeld = Math.floor((Date.now() - firstTxTimestamp) / (1000 * 60 * 60 * 24));
+
+        console.log(`Holder ${walletAddress}: held for ${daysHeld} days, position: ${netPosition}`);
 
         return {
             address: walletAddress,
@@ -350,14 +359,16 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
   /**
    * Fetch REAL holder durations using Helius Enhanced Transactions API
    */
-  const fetchHolderDurations = async (holderAddresses: string[]) => {
+  const fetchHolderDurations = async (holderAddresses: string[], currentHolders: ExtendedHolder[]) => {
+      console.log(`Fetching durations for ${holderAddresses.length} holders`);
       setLoadingDurations(true);
       
       const batchSize = 3; // Process 3 at a time to avoid rate limits
-      const updatedHolders: ExtendedHolder[] = [...holders];
+      const updatedHolders: ExtendedHolder[] = [...currentHolders]; // Use passed holders, not stale state
       
       for (let i = 0; i < Math.min(holderAddresses.length, 20); i += batchSize) {
           const batch = holderAddresses.slice(i, i + batchSize);
+          console.log(`Processing batch ${i / batchSize + 1}: ${batch.length} addresses`);
           
           const results = await Promise.all(
               batch.map(addr => fetchHolderFirstAcquisition(addr, ca))
@@ -366,6 +377,7 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
           results.forEach((duration, idx) => {
               const holderIndex = updatedHolders.findIndex(h => h.address === batch[idx]);
               if (holderIndex !== -1 && duration) {
+                  console.log(`Duration found for ${batch[idx]}: ${duration.daysHeld} days`);
                   updatedHolders[holderIndex] = {
                       ...updatedHolders[holderIndex],
                       realDuration: duration,
@@ -373,7 +385,14 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
                       isOldfag: duration.isOG,
                       heldSince: new Date(duration.firstTxTimestamp).toLocaleDateString(),
                       diamondHands: duration.daysHeld > 14 && duration.netPosition !== 'DISTRIBUTING',
-                      hasSold: duration.netPosition === 'DISTRIBUTING'
+                      hasSold: duration.netPosition === 'DISTRIBUTING',
+                      loadingDuration: false
+                  };
+              } else if (holderIndex !== -1) {
+                  // Mark as done loading even if no duration found
+                  updatedHolders[holderIndex] = {
+                      ...updatedHolders[holderIndex],
+                      loadingDuration: false
                   };
               }
           });
@@ -389,6 +408,8 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
       
       // Calculate duration stats
       const holdersWithDuration = updatedHolders.filter(h => h.realDuration);
+      console.log(`${holdersWithDuration.length} holders have duration data`);
+      
       if (holdersWithDuration.length > 0) {
           const totalDays = holdersWithDuration.reduce((sum, h) => sum + (h.realDuration?.daysHeld || 0), 0);
           const avgDays = Math.round(totalDays / holdersWithDuration.length);
@@ -403,21 +424,59 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
 
   const fetchRealHolders = async () => {
     setLoadingHolders(true);
+    console.log("Fetching holders for token:", ca);
+    
     try {
-        const response = await fetch(HELIUS_RPC, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 'holders', method: 'getTokenLargestAccounts', params: [ca] }) });
+        // Use Helius DAS API getTokenAccounts - returns owner wallet addresses!
+        const response = await fetch(HELIUS_RPC, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ 
+                jsonrpc: '2.0', 
+                id: 'holders', 
+                method: 'getTokenAccounts',
+                params: {
+                    mint: ca,
+                    limit: 20,
+                    options: {
+                        showZeroBalance: false
+                    }
+                }
+            }) 
+        });
         const data = await response.json();
-        const accounts = data.result?.value || [];
+        console.log("getTokenAccounts response:", data);
+        
+        const accounts = data.result?.token_accounts || [];
+        
         if (accounts.length > 0) {
-            const realHolders: ExtendedHolder[] = accounts.map((acc: any, index: number) => {
-                const amount = acc.uiAmount;
-                const pct = (amount / liveMetrics.supply) * 100;
+            console.log(`Found ${accounts.length} token accounts`);
+            
+            // Sort by amount descending to get top holders
+            const sortedAccounts = accounts.sort((a: any, b: any) => 
+                (b.amount || 0) - (a.amount || 0)
+            );
+            
+            // Calculate total supply from holders for percentage
+            const totalFromHolders = sortedAccounts.reduce((sum: number, acc: any) => 
+                sum + (acc.amount || 0), 0
+            );
+            
+            const realHolders: ExtendedHolder[] = sortedAccounts.slice(0, 20).map((acc: any, index: number) => {
+                const decimals = acc.decimals || 6;
+                const amount = (acc.amount || 0) / Math.pow(10, decimals);
+                const pct = totalFromHolders > 0 ? ((acc.amount || 0) / totalFromHolders) * 100 : 0;
+                
+                // The OWNER is the wallet address we need!
+                const ownerAddress = acc.owner;
+                
                 let tag = undefined;
                 if (index === 0 && pct > 10) tag = "Raydium/LP?"; 
                 if (index === 1 && pct > 4) tag = "Dev/Team?";
                 
                 return { 
                     rank: index + 1, 
-                    address: acc.address, 
+                    address: ownerAddress, // Use owner wallet address, not token account!
                     amount: amount, 
                     percentage: parseFloat(pct.toFixed(2)), 
                     value: amount * liveMetrics.price, 
@@ -430,14 +489,124 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
                     loadingDuration: true
                 };
             });
+            
+            console.log("Processed holders:", realHolders.length);
             setHolders(realHolders);
             
-            // Now fetch real durations for top holders
-            const holderAddresses = realHolders.map(h => h.address);
-            fetchHolderDurations(holderAddresses);
+            // Now fetch real durations for top holders using their WALLET addresses
+            const holderAddresses = realHolders.map(h => h.address).filter(Boolean);
+            if (holderAddresses.length > 0) {
+                fetchHolderDurations(holderAddresses, realHolders); // Pass holders data directly
+            }
             
-        } else setHolders(generateLiveHolders());
-    } catch (e) { setHolders(generateLiveHolders()); } finally { setLoadingHolders(false); }
+        } else {
+            // Fallback: try the old method and resolve owners
+            console.log("getTokenAccounts returned empty, trying fallback...");
+            await fetchHoldersFallback();
+        }
+    } catch (e) { 
+        console.error("Primary holder fetch failed:", e);
+        await fetchHoldersFallback();
+    } finally { 
+        setLoadingHolders(false); 
+    }
+  };
+
+  // Fallback method using getTokenLargestAccounts + owner resolution
+  const fetchHoldersFallback = async () => {
+    console.log("Using fallback method: getTokenLargestAccounts");
+    
+    try {
+        const response = await fetch(HELIUS_RPC, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ 
+                jsonrpc: '2.0', 
+                id: 'holders-fallback', 
+                method: 'getTokenLargestAccounts', 
+                params: [ca] 
+            }) 
+        });
+        const data = await response.json();
+        console.log("getTokenLargestAccounts response:", data);
+        
+        const accounts = data.result?.value || [];
+        
+        if (accounts.length > 0) {
+            console.log(`Found ${accounts.length} token accounts, resolving owners...`);
+            
+            // Now we need to get the OWNER of each token account
+            const holdersWithOwners: ExtendedHolder[] = [];
+            
+            for (let i = 0; i < Math.min(accounts.length, 15); i++) {
+                const acc = accounts[i];
+                try {
+                    // Get account info to find owner
+                    const infoRes = await fetch(HELIUS_RPC, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            jsonrpc: '2.0',
+                            id: `owner-${i}`,
+                            method: 'getAccountInfo',
+                            params: [acc.address, { encoding: 'jsonParsed' }]
+                        })
+                    });
+                    const infoData = await infoRes.json();
+                    const owner = infoData.result?.value?.data?.parsed?.info?.owner;
+                    
+                    console.log(`Account ${i}: ${acc.address} -> Owner: ${owner}`);
+                    
+                    if (owner) {
+                        const amount = acc.uiAmount || 0;
+                        const pct = (amount / liveMetrics.supply) * 100;
+                        let tag = undefined;
+                        if (i === 0 && pct > 10) tag = "Raydium/LP?";
+                        if (i === 1 && pct > 4) tag = "Dev/Team?";
+                        
+                        holdersWithOwners.push({
+                            rank: holdersWithOwners.length + 1,
+                            address: owner, // Use the OWNER wallet address
+                            amount: amount,
+                            percentage: parseFloat(pct.toFixed(2)),
+                            value: amount * liveMetrics.price,
+                            tag: tag,
+                            heldSince: "Loading...",
+                            isOldfag: false,
+                            daysHeld: 0,
+                            hasSold: false,
+                            diamondHands: false,
+                            loadingDuration: true
+                        });
+                    }
+                } catch (e) {
+                    console.error(`Failed to get owner for account ${i}:`, e);
+                }
+                
+                // Small delay to avoid rate limits
+                if (i < accounts.length - 1) {
+                    await new Promise(r => setTimeout(r, 100));
+                }
+            }
+            
+            console.log(`Resolved ${holdersWithOwners.length} holder owners`);
+            
+            if (holdersWithOwners.length > 0) {
+                setHolders(holdersWithOwners);
+                const holderAddresses = holdersWithOwners.map(h => h.address);
+                fetchHolderDurations(holderAddresses, holdersWithOwners); // Pass holders data directly
+            } else {
+                console.log("No holders resolved, using generated fallback");
+                setHolders(generateLiveHolders());
+            }
+        } else {
+            console.log("No accounts found, using generated fallback");
+            setHolders(generateLiveHolders());
+        }
+    } catch (e) {
+        console.error("Fallback holder fetch failed:", e);
+        setHolders(generateLiveHolders());
+    }
   };
 
   const generateLiveHolders = (): ExtendedHolder[] => {
@@ -505,17 +674,59 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
   };
 
   useEffect(() => {
+    console.log("Initial load effect triggered, ca:", ca);
     fetchRealHolders();
     fetchRealActivity();
-    const interval = setInterval(() => { fetchRealActivity(); updateHeadline(); }, 10000);
-    const sandwichInterval = setInterval(() => { if (Math.random() > 0.8) { const victim = `So1${Math.random().toString(36).substring(2,5)}...`; setSandwichAlert(victim); setTimeout(() => setSandwichAlert(null), 5000); } }, 10000);
-    return () => { clearInterval(interval); clearInterval(sandwichInterval); };
+    updateHeadline();
+    
+    const interval = setInterval(() => { 
+        fetchRealActivity(); 
+        updateHeadline(); 
+    }, 10000);
+    
+    const sandwichInterval = setInterval(() => { 
+        if (Math.random() > 0.8) { 
+            const victim = `So1${Math.random().toString(36).substring(2,5)}...`; 
+            setSandwichAlert(victim); 
+            setTimeout(() => setSandwichAlert(null), 5000); 
+        } 
+    }, 10000);
+    
+    return () => { 
+        clearInterval(interval); 
+        clearInterval(sandwichInterval); 
+    };
+  }, [ca]); // Only depend on ca, not price
+
+  // Separate effect to refresh when price changes
+  useEffect(() => {
+    if (liveMetrics.price > 0 && holders.length > 0) {
+        // Recalculate values when price updates
+        setHolders(prev => prev.map(h => ({
+            ...h,
+            value: h.amount * liveMetrics.price
+        })));
+    }
   }, [liveMetrics.price]);
 
   const athPercent = liveMetrics.ath ? ((liveMetrics.price / liveMetrics.ath) * 100).toFixed(1) : "0";
 
-  // Enhanced Holders Tab Component with Real Duration
-  const EnhancedHoldersTab = () => (
+  // Enhanced Holders Tab Component with Real Duration - LEADERBOARD STYLE
+  const EnhancedHoldersTab = () => {
+    // Sort holders by days held (longest first) for leaderboard
+    const sortedHolders = [...holders].sort((a, b) => {
+      // If both have real duration data, sort by days held
+      if (a.realDuration && b.realDuration) {
+        return b.daysHeld - a.daysHeld;
+      }
+      // Put holders with duration data first
+      if (a.realDuration && !b.realDuration) return -1;
+      if (!a.realDuration && b.realDuration) return 1;
+      // If neither has data yet, maintain original order
+      return 0;
+    });
+
+    return (
     <div className="space-y-4">
       {/* Duration Stats Banner */}
       {durationStats.avgDays > 0 && (
@@ -538,21 +749,28 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
         </div>
       )}
 
-      {loadingHolders ? (
+      {loadingHolders && holders.length === 0 ? (
         <div className="text-center py-8 animate-pulse text-cyan-400">
           <Terminal className="mx-auto mb-2" size={24} />
           SCANNING CREW MANIFEST...
         </div>
+      ) : holders.length === 0 ? (
+        <div className="text-center py-8 text-slate-400">
+          <Terminal className="mx-auto mb-2" size={24} />
+          No holder data found. The token may be too new or have no trading activity.
+        </div>
       ) : (
         <div className="overflow-x-auto">
+          <div className="text-center mb-3 text-cyan-400 text-xs font-bold tracking-widest">
+            🏆 DIAMOND HANDS LEADERBOARD 🏆
+          </div>
           <table className="w-full text-left">
             <thead className="bg-slate-900 text-cyan-400 text-[10px] uppercase tracking-wider">
               <tr>
-                <th className="p-2">#</th>
+                <th className="p-2">🏅 RANK</th>
                 <th className="p-2">ADDRESS</th>
                 <th className="p-2">HOLDINGS</th>
                 <th className="p-2">%</th>
-                <th className="p-2">VALUE</th>
                 <th className="p-2 text-center">
                   <div className="flex items-center gap-1 justify-center">
                     <Clock size={10} />
@@ -565,11 +783,32 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
               </tr>
             </thead>
             <tbody>
-              {holders.map((h) => {
+              {sortedHolders.map((h, index) => {
                 const tier = getHoldTier(h.daysHeld);
+                const leaderboardRank = index + 1;
+                
+                // Special styling for top 3
+                const rankStyle = leaderboardRank === 1 
+                  ? "text-yellow-400 font-black text-lg" 
+                  : leaderboardRank === 2 
+                  ? "text-slate-300 font-bold" 
+                  : leaderboardRank === 3 
+                  ? "text-orange-400 font-bold" 
+                  : "text-slate-400";
+                
+                const rankEmoji = leaderboardRank === 1 ? "🥇" : leaderboardRank === 2 ? "🥈" : leaderboardRank === 3 ? "🥉" : `#${leaderboardRank}`;
+                
+                const rowBg = leaderboardRank === 1 
+                  ? "bg-yellow-950/30 border-yellow-700" 
+                  : leaderboardRank === 2 
+                  ? "bg-slate-800/30 border-slate-600" 
+                  : leaderboardRank === 3 
+                  ? "bg-orange-950/30 border-orange-700" 
+                  : "border-slate-800";
+
                 return (
-                  <tr key={h.rank} className="border-b border-slate-800 hover:bg-slate-900/50 transition-colors">
-                    <td className="p-2 text-slate-400">{h.rank}</td>
+                  <tr key={h.address} className={`border-b ${rowBg} hover:bg-slate-900/50 transition-colors`}>
+                    <td className={`p-2 ${rankStyle}`}>{rankEmoji}</td>
                     <td className="p-2">
                       <div className="flex flex-col">
                         <span className="text-cyan-300 cursor-pointer hover:text-white" onClick={() => handleInspect(h.address)}>
@@ -590,26 +829,31 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
                         <span className="text-white">{h.percentage.toFixed(2)}%</span>
                       </div>
                     </td>
-                    <td className="p-2 text-green-400">{formatCurrency(h.value)}</td>
                     <td className="p-2 text-center">
                       {h.loadingDuration && !h.realDuration ? (
-                        <span className="text-slate-500 animate-pulse text-[10px]">Loading...</span>
-                      ) : (
+                        <span className="text-slate-500 animate-pulse text-[10px]">⏳ Loading...</span>
+                      ) : h.realDuration ? (
                         <div className="flex flex-col items-center">
-                          <span className="text-white font-bold">{formatHoldDuration(h.daysHeld)}</span>
-                          {h.realDuration && (
-                            <span className="text-[9px] text-slate-400">
-                              since {h.heldSince}
-                            </span>
-                          )}
+                          <span className={`font-bold ${leaderboardRank <= 3 ? 'text-lg' : ''} ${leaderboardRank === 1 ? 'text-yellow-400' : 'text-white'}`}>
+                            {formatHoldDuration(h.daysHeld)}
+                          </span>
+                          <span className="text-[9px] text-slate-400">
+                            since {h.heldSince}
+                          </span>
                         </div>
+                      ) : (
+                        <span className="text-slate-500 text-[10px]">N/A</span>
                       )}
                     </td>
                     <td className="p-2 text-center">
-                      <span className={`${tier.color} text-[10px] font-bold flex items-center justify-center gap-1`}>
-                        <span>{tier.emoji}</span>
-                        {tier.tier}
-                      </span>
+                      {h.realDuration ? (
+                        <span className={`${tier.color} text-[10px] font-bold flex items-center justify-center gap-1`}>
+                          <span>{tier.emoji}</span>
+                          {tier.tier}
+                        </span>
+                      ) : (
+                        <span className="text-slate-600 text-[10px]">-</span>
+                      )}
                     </td>
                     <td className="p-2 text-center">
                       {h.realDuration?.netPosition === 'ACCUMULATING' && (
@@ -627,8 +871,8 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
                           <Diamond size={10} /> HODL
                         </span>
                       )}
-                      {!h.realDuration && !h.loadingDuration && (
-                        <span className="text-slate-500 text-[10px]">-</span>
+                      {!h.realDuration && (
+                        <span className="text-slate-600 text-[10px]">-</span>
                       )}
                     </td>
                     <td className="p-2">
@@ -650,11 +894,12 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
       {loadingDurations && (
         <div className="text-center py-2 text-cyan-400 text-xs animate-pulse flex items-center justify-center gap-2">
           <Clock size={12} className="animate-spin" />
-          Fetching real hold durations from chain...
+          Fetching real hold durations from chain... ({holders.filter(h => h.realDuration).length}/{holders.length})
         </div>
       )}
     </div>
-  );
+  )};
+
 
   return (
     <div className="relative w-full max-w-[98%] 2xl:max-w-[1600px] mx-auto mt-8 mb-8 border-[2px] border-cyan-800 bg-[#02040a] font-tech text-white overflow-hidden shadow-2xl rounded-lg ring-1 ring-cyan-900/50">

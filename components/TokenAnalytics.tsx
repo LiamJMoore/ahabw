@@ -132,15 +132,12 @@ const fetchHolderFirstAcquisition = async (
 };
 
 /**
- * Formats hold duration in human readable format
+ * Formats hold duration in days
  */
 const formatHoldDuration = (days: number): string => {
     if (days === 0) return "< 1 day";
     if (days === 1) return "1 day";
-    if (days < 7) return `${days} days`;
-    if (days < 30) return `${Math.floor(days / 7)}w ${days % 7}d`;
-    if (days < 365) return `${Math.floor(days / 30)}mo ${days % 30}d`;
-    return `${Math.floor(days / 365)}y ${Math.floor((days % 365) / 30)}mo`;
+    return `${days} days`;
 };
 
 /**

@@ -811,9 +811,14 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
                     <td className={`p-2 ${rankStyle}`}>{rankEmoji}</td>
                     <td className="p-2">
                       <div className="flex flex-col">
-                        <span className="text-cyan-300 cursor-pointer hover:text-white" onClick={() => handleInspect(h.address)}>
+                        <a 
+                          href={`https://solscan.io/account/${h.address}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-cyan-300 cursor-pointer hover:text-white hover:underline"
+                        >
                           {truncateAddress(h.address)}
-                        </span>
+                        </a>
                         {h.tag && <span className="text-[9px] text-yellow-500">{h.tag}</span>}
                       </div>
                     </td>
@@ -876,12 +881,14 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
                       )}
                     </td>
                     <td className="p-2">
-                      <button 
-                        onClick={() => handleInspect(h.address)}
-                        className="bg-cyan-900 border border-cyan-600 hover:bg-cyan-800 px-2 py-1 text-[9px] rounded transition-colors"
+                      <a 
+                        href={`https://solscan.io/account/${h.address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-cyan-900 border border-cyan-600 hover:bg-cyan-800 px-2 py-1 text-[9px] rounded transition-colors inline-flex items-center"
                       >
                         <Search size={10} />
-                      </button>
+                      </a>
                     </td>
                   </tr>
                 );
@@ -1028,3 +1035,4 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
     </div>
   );
 };
+

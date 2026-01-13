@@ -711,8 +711,22 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
 
   const athPercent = liveMetrics.ath ? ((liveMetrics.price / liveMetrics.ath) * 100).toFixed(1) : "0";
 
-  // Enhanced Holders Tab Component with Real Duration
-  const EnhancedHoldersTab = () => (
+  // Enhanced Holders Tab Component with Real Duration - LEADERBOARD STYLE
+  const EnhancedHoldersTab = () => {
+    // Sort holders by days held (longest first) for leaderboard
+    const sortedHolders = [...holders].sort((a, b) => {
+      // If both have real duration data, sort by days held
+      if (a.realDuration && b.realDuration) {
+        return b.daysHeld - a.daysHeld;
+      }
+      // Put holders with duration data first
+      if (a.realDuration && !b.realDuration) return -1;
+      if (!a.realDuration && b.realDuration) return 1;
+      // If neither has data yet, maintain original order
+      return 0;
+    });
+
+    return (
     <div className="space-y-4">
       {/* Duration Stats Banner */}
       {durationStats.avgDays > 0 && (
@@ -747,14 +761,16 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
         </div>
       ) : (
         <div className="overflow-x-auto">
+          <div className="text-center mb-3 text-cyan-400 text-xs font-bold tracking-widest">
+            🏆 DIAMOND HANDS LEADERBOARD 🏆
+          </div>
           <table className="w-full text-left">
             <thead className="bg-slate-900 text-cyan-400 text-[10px] uppercase tracking-wider">
               <tr>
-                <th className="p-2">#</th>
+                <th className="p-2">🏅 RANK</th>
                 <th className="p-2">ADDRESS</th>
                 <th className="p-2">HOLDINGS</th>
                 <th className="p-2">%</th>
-                <th className="p-2">VALUE</th>
                 <th className="p-2 text-center">
                   <div className="flex items-center gap-1 justify-center">
                     <Clock size={10} />
@@ -767,11 +783,32 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
               </tr>
             </thead>
             <tbody>
-              {holders.map((h) => {
+              {sortedHolders.map((h, index) => {
                 const tier = getHoldTier(h.daysHeld);
+                const leaderboardRank = index + 1;
+                
+                // Special styling for top 3
+                const rankStyle = leaderboardRank === 1 
+                  ? "text-yellow-400 font-black text-lg" 
+                  : leaderboardRank === 2 
+                  ? "text-slate-300 font-bold" 
+                  : leaderboardRank === 3 
+                  ? "text-orange-400 font-bold" 
+                  : "text-slate-400";
+                
+                const rankEmoji = leaderboardRank === 1 ? "🥇" : leaderboardRank === 2 ? "🥈" : leaderboardRank === 3 ? "🥉" : `#${leaderboardRank}`;
+                
+                const rowBg = leaderboardRank === 1 
+                  ? "bg-yellow-950/30 border-yellow-700" 
+                  : leaderboardRank === 2 
+                  ? "bg-slate-800/30 border-slate-600" 
+                  : leaderboardRank === 3 
+                  ? "bg-orange-950/30 border-orange-700" 
+                  : "border-slate-800";
+
                 return (
-                  <tr key={h.rank} className="border-b border-slate-800 hover:bg-slate-900/50 transition-colors">
-                    <td className="p-2 text-slate-400">{h.rank}</td>
+                  <tr key={h.address} className={`border-b ${rowBg} hover:bg-slate-900/50 transition-colors`}>
+                    <td className={`p-2 ${rankStyle}`}>{rankEmoji}</td>
                     <td className="p-2">
                       <div className="flex flex-col">
                         <span className="text-cyan-300 cursor-pointer hover:text-white" onClick={() => handleInspect(h.address)}>
@@ -792,13 +829,14 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
                         <span className="text-white">{h.percentage.toFixed(2)}%</span>
                       </div>
                     </td>
-                    <td className="p-2 text-green-400">{formatCurrency(h.value)}</td>
                     <td className="p-2 text-center">
                       {h.loadingDuration && !h.realDuration ? (
                         <span className="text-slate-500 animate-pulse text-[10px]">⏳ Loading...</span>
                       ) : h.realDuration ? (
                         <div className="flex flex-col items-center">
-                          <span className="text-white font-bold">{formatHoldDuration(h.daysHeld)}</span>
+                          <span className={`font-bold ${leaderboardRank <= 3 ? 'text-lg' : ''} ${leaderboardRank === 1 ? 'text-yellow-400' : 'text-white'}`}>
+                            {formatHoldDuration(h.daysHeld)}
+                          </span>
                           <span className="text-[9px] text-slate-400">
                             since {h.heldSince}
                           </span>
@@ -860,7 +898,8 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
         </div>
       )}
     </div>
-  );
+  )};
+
 
   return (
     <div className="relative w-full max-w-[98%] 2xl:max-w-[1600px] mx-auto mt-8 mb-8 border-[2px] border-cyan-800 bg-[#02040a] font-tech text-white overflow-hidden shadow-2xl rounded-lg ring-1 ring-cyan-900/50">

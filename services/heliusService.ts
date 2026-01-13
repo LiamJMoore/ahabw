@@ -1,8 +1,8 @@
-
 import { HELIUS_API_KEY } from '../constants';
 
-// Updated to the high-performance endpoint
+// Helius Endpoints
 const RPC_URL = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
+const API_BASE = `https://api.helius.xyz/v0`;
 const JUP_PRICE_API = "https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112";
 
 export interface HeliusAssetResponse {
@@ -49,6 +49,15 @@ export interface BountyTx {
     timestamp: number;
 }
 
+export interface HolderDuration {
+    address: string;
+    firstTxTimestamp: number;
+    firstTxSignature: string;
+    daysHeld: number;
+    firstTxType: 'BUY' | 'TRANSFER_IN' | 'UNKNOWN';
+    isOG: boolean; // Held since very early
+}
+
 // Fallback data to ensure the UI never breaks
 const FALLBACK_WHALE_DATA: HeliusAssetResponse = {
   result: {
@@ -91,6 +100,190 @@ export const fetchTokenAsset = async (mintAddress: string): Promise<HeliusAssetR
     console.error("Failed to fetch asset from Helius (Network Error):", error);
     return FALLBACK_WHALE_DATA;
   }
+};
+
+/**
+ * Fetches the first transaction where a wallet received a specific token
+ * This tells us how long they've been holding
+ */
+export const fetchHolderFirstAcquisition = async (
+    walletAddress: string, 
+    tokenMint: string
+): Promise<HolderDuration | null> => {
+    if (!HELIUS_API_KEY) return null;
+
+    try {
+        // Use Enhanced Transactions API to get wallet's transaction history
+        // We'll paginate backwards to find the earliest token interaction
+        const response = await fetch(
+            `${API_BASE}/addresses/${walletAddress}/transactions?api-key=${HELIUS_API_KEY}&limit=100`
+        );
+        
+        const transactions = await response.json();
+        
+        if (!Array.isArray(transactions) || transactions.length === 0) {
+            return null;
+        }
+
+        // Find all transactions involving this specific token
+        const tokenTxs = transactions.filter((tx: any) => {
+            // Check tokenTransfers for the mint
+            const hasTokenTransfer = tx.tokenTransfers?.some(
+                (transfer: any) => transfer.mint === tokenMint
+            );
+            return hasTokenTransfer;
+        });
+
+        if (tokenTxs.length === 0) {
+            return null;
+        }
+
+        // Get the OLDEST transaction (last in array after sorting by timestamp)
+        const sortedTxs = tokenTxs.sort((a: any, b: any) => a.timestamp - b.timestamp);
+        const firstTx = sortedTxs[0];
+
+        // Determine if it was a buy or transfer
+        let firstTxType: 'BUY' | 'TRANSFER_IN' | 'UNKNOWN' = 'UNKNOWN';
+        if (firstTx.type === 'SWAP') {
+            firstTxType = 'BUY';
+        } else if (firstTx.type === 'TRANSFER') {
+            // Check if tokens were received (not sent)
+            const transfer = firstTx.tokenTransfers?.find(
+                (t: any) => t.mint === tokenMint && t.toUserAccount === walletAddress
+            );
+            if (transfer) {
+                firstTxType = 'TRANSFER_IN';
+            }
+        }
+
+        const firstTxTimestamp = firstTx.timestamp * 1000; // Convert to milliseconds
+        const now = Date.now();
+        const daysHeld = Math.floor((now - firstTxTimestamp) / (1000 * 60 * 60 * 24));
+
+        return {
+            address: walletAddress,
+            firstTxTimestamp,
+            firstTxSignature: firstTx.signature,
+            daysHeld,
+            firstTxType,
+            isOG: daysHeld > 30 // Consider OG if held for 30+ days
+        };
+    } catch (error) {
+        console.error(`Failed to fetch holder duration for ${walletAddress}:`, error);
+        return null;
+    }
+};
+
+/**
+ * Batch fetch holder durations for multiple addresses
+ * Returns a map of address -> HolderDuration
+ */
+export const fetchBatchHolderDurations = async (
+    walletAddresses: string[],
+    tokenMint: string,
+    maxConcurrent: number = 5
+): Promise<Map<string, HolderDuration>> => {
+    const results = new Map<string, HolderDuration>();
+    
+    // Process in batches to avoid rate limiting
+    for (let i = 0; i < walletAddresses.length; i += maxConcurrent) {
+        const batch = walletAddresses.slice(i, i + maxConcurrent);
+        
+        const batchResults = await Promise.all(
+            batch.map(addr => fetchHolderFirstAcquisition(addr, tokenMint))
+        );
+        
+        batchResults.forEach((result, index) => {
+            if (result) {
+                results.set(batch[index], result);
+            }
+        });
+        
+        // Small delay between batches to respect rate limits
+        if (i + maxConcurrent < walletAddresses.length) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+    }
+    
+    return results;
+};
+
+/**
+ * Alternative: Use getSignaturesForAsset for compressed NFTs or 
+ * getTransactionsForAddress for more detailed history
+ */
+export const fetchDetailedHolderHistory = async (
+    walletAddress: string,
+    tokenMint: string
+): Promise<{
+    totalBuys: number;
+    totalSells: number;
+    netPosition: 'ACCUMULATING' | 'DISTRIBUTING' | 'HOLDING';
+    avgHoldTime: number;
+    firstAcquisition: number | null;
+    lastActivity: number | null;
+} | null> => {
+    if (!HELIUS_API_KEY) return null;
+
+    try {
+        const response = await fetch(
+            `${API_BASE}/addresses/${walletAddress}/transactions?api-key=${HELIUS_API_KEY}&limit=100`
+        );
+        
+        const transactions = await response.json();
+        
+        if (!Array.isArray(transactions)) return null;
+
+        let totalBuys = 0;
+        let totalSells = 0;
+        let firstAcquisition: number | null = null;
+        let lastActivity: number | null = null;
+
+        transactions.forEach((tx: any) => {
+            const tokenTransfers = tx.tokenTransfers?.filter(
+                (t: any) => t.mint === tokenMint
+            ) || [];
+
+            tokenTransfers.forEach((transfer: any) => {
+                const timestamp = tx.timestamp * 1000;
+                
+                // Track first and last activity
+                if (!firstAcquisition || timestamp < firstAcquisition) {
+                    firstAcquisition = timestamp;
+                }
+                if (!lastActivity || timestamp > lastActivity) {
+                    lastActivity = timestamp;
+                }
+
+                // Determine buy vs sell
+                if (transfer.toUserAccount === walletAddress) {
+                    totalBuys += transfer.tokenAmount || 0;
+                } else if (transfer.fromUserAccount === walletAddress) {
+                    totalSells += transfer.tokenAmount || 0;
+                }
+            });
+        });
+
+        let netPosition: 'ACCUMULATING' | 'DISTRIBUTING' | 'HOLDING' = 'HOLDING';
+        if (totalBuys > totalSells * 1.2) netPosition = 'ACCUMULATING';
+        else if (totalSells > totalBuys * 1.2) netPosition = 'DISTRIBUTING';
+
+        const avgHoldTime = firstAcquisition 
+            ? Math.floor((Date.now() - firstAcquisition) / (1000 * 60 * 60 * 24))
+            : 0;
+
+        return {
+            totalBuys,
+            totalSells,
+            netPosition,
+            avgHoldTime,
+            firstAcquisition,
+            lastActivity
+        };
+    } catch (error) {
+        console.error(`Failed to fetch detailed history for ${walletAddress}:`, error);
+        return null;
+    }
 };
 
 export const fetchRecentBounties = async (): Promise<BountyTx[]> => {
@@ -155,12 +348,12 @@ export const fetchTreasuryPortfolio = async (address: string): Promise<TreasuryD
                 image: item.content?.links?.image || "",
                 mint: item.id
             }))
-            .filter((a: TreasuryAsset) => a.amount > 0); // Remove empty balances
+            .filter((a: TreasuryAsset) => a.amount > 0);
 
         return {
             solBalance,
             solPrice,
-            totalUsd: (solBalance * solPrice), // Simplified total for now
+            totalUsd: (solBalance * solPrice),
             assets
         };
 
@@ -174,7 +367,7 @@ export type WeatherState = 'STORM' | 'CALM' | 'FOG';
 
 export const getMarketWeather = async (): Promise<WeatherState> => {
     const rand = Math.random();
-    if (rand < 0.4) return 'STORM'; // Bearish/High Volatility
-    if (rand < 0.7) return 'CALM';  // Bullish/Steady
-    return 'FOG';                   // Low Volume
+    if (rand < 0.4) return 'STORM';
+    if (rand < 0.7) return 'CALM';
+    return 'FOG';
 };

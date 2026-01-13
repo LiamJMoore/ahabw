@@ -792,7 +792,7 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
                         <span className="text-white">{h.percentage.toFixed(2)}%</span>
                       </div>
                     </td>
-                    <td className="p-2 text-green-400">{formatCurrency(h.value)}</td>
+                    <td className="p-2 text-green-400">{formatCurrency(h.amount * liveMetrics.price)}</td>
                     <td className="p-2 text-center">
                       {h.loadingDuration && !h.realDuration ? (
                         <span className="text-slate-500 animate-pulse text-[10px]">⏳ Loading...</span>

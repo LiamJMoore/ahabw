@@ -754,7 +754,6 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
                 <th className="p-2">ADDRESS</th>
                 <th className="p-2">HOLDINGS</th>
                 <th className="p-2">%</th>
-                <th className="p-2">VALUE</th>
                 <th className="p-2 text-center">
                   <div className="flex items-center gap-1 justify-center">
                     <Clock size={10} />
@@ -791,12 +790,6 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
                         </div>
                         <span className="text-white">{h.percentage.toFixed(2)}%</span>
                       </div>
-                    </td>
-                    <td className="p-2 text-green-400" title={`Amount: ${h.amount}, Price: ${liveMetrics.price}`}>
-                      {liveMetrics.price > 0 
-                        ? `$${(h.amount * liveMetrics.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                        : <span className="text-slate-500 animate-pulse">Loading...</span>
-                      }
                     </td>
                     <td className="p-2 text-center">
                       {h.loadingDuration && !h.realDuration ? (

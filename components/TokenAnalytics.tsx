@@ -363,12 +363,13 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
       console.log(`Fetching durations for ${holderAddresses.length} holders`);
       setLoadingDurations(true);
       
-      const batchSize = 3; // Process 3 at a time to avoid rate limits
-      const updatedHolders: ExtendedHolder[] = [...currentHolders]; // Use passed holders, not stale state
+      const batchSize = 5; // Process 5 at a time for speed
+      const updatedHolders: ExtendedHolder[] = [...currentHolders];
       
-      for (let i = 0; i < Math.min(holderAddresses.length, 20); i += batchSize) {
+      // Fetch durations for ALL holders (up to 100)
+      for (let i = 0; i < holderAddresses.length; i += batchSize) {
           const batch = holderAddresses.slice(i, i + batchSize);
-          console.log(`Processing batch ${i / batchSize + 1}: ${batch.length} addresses`);
+          console.log(`Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(holderAddresses.length / batchSize)}: ${batch.length} addresses`);
           
           const results = await Promise.all(
               batch.map(addr => fetchHolderFirstAcquisition(addr, ca))
@@ -397,12 +398,12 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
               }
           });
           
-          // Update state progressively
+          // Update state progressively so UI updates as we go
           setHolders([...updatedHolders]);
           
-          // Delay between batches
+          // Small delay between batches to respect rate limits
           if (i + batchSize < holderAddresses.length) {
-              await new Promise(resolve => setTimeout(resolve, 300));
+              await new Promise(resolve => setTimeout(resolve, 200));
           }
       }
       
@@ -437,7 +438,7 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
                 method: 'getTokenAccounts',
                 params: {
                     mint: ca,
-                    limit: 20,
+                    limit: 100,  // Get top 100 holders
                     options: {
                         showZeroBalance: false
                     }
@@ -462,7 +463,7 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
                 sum + (acc.amount || 0), 0
             );
             
-            const realHolders: ExtendedHolder[] = sortedAccounts.slice(0, 20).map((acc: any, index: number) => {
+            const realHolders: ExtendedHolder[] = sortedAccounts.slice(0, 100).map((acc: any, index: number) => {
                 const decimals = acc.decimals || 6;
                 const amount = (acc.amount || 0) / Math.pow(10, decimals);
                 const pct = totalFromHolders > 0 ? ((acc.amount || 0) / totalFromHolders) * 100 : 0;
@@ -538,7 +539,7 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
             // Now we need to get the OWNER of each token account
             const holdersWithOwners: ExtendedHolder[] = [];
             
-            for (let i = 0; i < Math.min(accounts.length, 15); i++) {
+            for (let i = 0; i < Math.min(accounts.length, 100); i++) {
                 const acc = accounts[i];
                 try {
                     // Get account info to find owner
@@ -729,12 +730,17 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
     return (
     <div className="space-y-4">
       {/* Duration Stats Banner */}
-      {durationStats.avgDays > 0 && (
+      {(durationStats.avgDays > 0 || holders.length > 0) && (
         <div className="bg-gradient-to-r from-cyan-950 to-purple-950 border border-cyan-700 p-3 rounded-lg flex flex-wrap gap-6 items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Trophy size={16} className="text-yellow-400" />
+            <span className="text-yellow-300 text-xs">TOTAL HOLDERS:</span>
+            <span className="text-white font-bold">{holders.length}</span>
+          </div>
           <div className="flex items-center gap-2">
             <Timer size={16} className="text-cyan-400" />
             <span className="text-cyan-300 text-xs">AVG HOLD TIME:</span>
-            <span className="text-white font-bold">{formatHoldDuration(durationStats.avgDays)}</span>
+            <span className="text-white font-bold">{durationStats.avgDays > 0 ? formatHoldDuration(durationStats.avgDays) : 'Loading...'}</span>
           </div>
           <div className="flex items-center gap-2">
             <Diamond size={16} className="text-purple-400" />
@@ -762,7 +768,7 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
       ) : (
         <div className="overflow-x-auto">
           <div className="text-center mb-3 text-cyan-400 text-xs font-bold tracking-widest">
-            🏆 DIAMOND HANDS LEADERBOARD 🏆
+            🏆 DIAMOND HANDS LEADERBOARD - TOP 100 🏆
           </div>
           <table className="w-full text-left">
             <thead className="bg-slate-900 text-cyan-400 text-[10px] uppercase tracking-wider">
@@ -901,7 +907,7 @@ export const TokenAnalytics: React.FC<TokenAnalyticsProps> = ({ ca, initialMetri
       {loadingDurations && (
         <div className="text-center py-2 text-cyan-400 text-xs animate-pulse flex items-center justify-center gap-2">
           <Clock size={12} className="animate-spin" />
-          Fetching real hold durations from chain... ({holders.filter(h => h.realDuration).length}/{holders.length})
+          Fetching hold durations... {holders.filter(h => h.realDuration).length}/{holders.length} wallets scanned
         </div>
       )}
     </div>

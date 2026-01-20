@@ -58,7 +58,7 @@ export const CommLinks: React.FC = () => {
              
              {/* DEXSCREENER */}
              <a 
-                href="https://dexscreener.com/solana/edo9kgxuczcambfrpcpscuweu7i5jscuauxw294e8drj" 
+                href="https://dexscreener.com/solana/4ojszo4qrkyjzdhr6qtc99gvbiz5gfksnx6vakunrs32" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex-1 lg:flex-none min-w-[160px] flex items-center justify-center gap-3 bg-[#1a1d21] hover:bg-[#202429] text-white px-6 py-4 rounded-xl border border-slate-700 hover:border-slate-500 font-tech transition-all hover:-translate-y-1 group relative overflow-hidden shadow-lg"
